@@ -216,3 +216,27 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.venv/
+
+.env
+
+node_modules/
+
+__pycache__/
+
+*.pyc
+
+logs/
+
+vector_store/
+
+.next/
+
+dist/
+
+coverage/
+
+.vscode/
+
+.DS_Store
