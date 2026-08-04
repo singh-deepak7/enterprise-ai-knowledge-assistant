@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, Upload, Bot } from "lucide-react";
-
+import BackgroundPattern from "@/components/common/BackgroundPattern";
 import Container from "@/components/layout/Container";
+import FadeIn from "@/components/common/FadeIn";
 
 export default function Hero() {
   return (
+    <FadeIn>
     <section className="relative overflow-hidden py-24 sm:py-32">
+     <BackgroundPattern />
       <Container>
         <div className="mx-auto max-w-4xl text-center">
 
@@ -50,5 +53,6 @@ export default function Hero() {
         </div>
       </Container>
     </section>
+    </FadeIn>
   );
 }

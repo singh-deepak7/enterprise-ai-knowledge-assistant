@@ -1,30 +1,45 @@
-import Link from "next/link";
-
 import Logo from "@/components/common/Logo";
+import ThemeToggle from "@/components/common/ThemeToggle";
+
 import Container from "./Container";
-import ThemeToggle from "../common/ThemeToggle";
+import MobileMenu from "./MobileMenu";
+import NavLink from "./NavLink";
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <Container>
         <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
           <Logo />
 
-          <nav className="hidden gap-8 md:flex">
-            <Link href="/">Home</Link>
-            <Link href="/features">Features</Link>
-            <Link href="/architecture">Architecture</Link>
-            <Link href="/github">GitHub</Link>
+          {/* Desktop Navigation */}
+          <nav className="hidden items-center gap-8 md:flex">
+            <NavLink href="/">Home</NavLink>
+            <NavLink href="/#features">Features</NavLink>
+            <NavLink href="/#architecture">Architecture</NavLink>
+
+            <a
+              href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground transition hover:text-foreground"
+            >
+              GitHub
+            </a>
           </nav>
 
-          <div className="flex items-center gap-4">
+          {/* Desktop Actions */}
+          <div className="hidden items-center gap-4 md:flex">
             <ThemeToggle />
 
             <button className="rounded-lg bg-cyan-500 px-5 py-2 font-medium text-black transition hover:bg-cyan-400">
               Login
             </button>
           </div>
+
+          {/* Mobile Menu */}
+          <MobileMenu />
         </div>
       </Container>
     </header>
