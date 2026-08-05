@@ -1,0 +1,5 @@
+Enterprise AI Knowledge Assistant
+
+This is a simple text document.
+
+The quick brown fox jumps over the lazy dog.
