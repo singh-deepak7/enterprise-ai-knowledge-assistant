@@ -3,7 +3,7 @@ from pathlib import Path
 from app.ai.loaders.text_loader import TxtLoader
 from app.ai.loaders.pdf_loader import PdfLoader
 from app.ai.loaders.csv_loader import CsvLoader
-
+from app.ai.loaders.excel_loader import ExcelLoader
 
 def main():
     from pathlib import Path
@@ -47,6 +47,18 @@ def main():
         print("=" * 60)
         print(doc.metadata)
         print(doc.page_content)
+
+
+    excelLoader = ExcelLoader()
+    excel_path = BASE_DIR / "app" / "sample_docs" / "sample.xlsx"
+    excel_documents = excelLoader.load(Path(excel_path))
+
+    print(f"Documents: {len(excel_documents)}")
+
+    for document in excel_documents:
+        print("=" * 60)
+        print(document.metadata)
+        print(document.page_content)
 
 
 if __name__ == "__main__":
