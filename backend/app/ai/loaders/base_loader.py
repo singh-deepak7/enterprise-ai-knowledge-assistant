@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 from langchain_core.documents import Document
 
@@ -16,7 +17,7 @@ class BaseLoader(ABC):
         """
         pass
 
-    def build_base_metadata(self, file_path: Path) -> dict[str, str]:
+    def build_base_metadata(self, file_path: Path) -> dict[str, Any]:
         """
         Build common metadata shared by all document types.
         """
