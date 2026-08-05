@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Set
 
 
 class Settings(BaseSettings):
@@ -19,6 +20,20 @@ class Settings(BaseSettings):
 
     MAX_UPLOAD_SIZE_MB: int = 25
 
+    ALLOWED_EXTENSIONS: set[str] = {
+    ".pdf",
+    ".txt",
+    ".csv",
+    ".xlsx",
+    }
+
+    ALLOWED_CONTENT_TYPES: set[str] = {
+        "application/pdf",
+        "text/plain",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(
@@ -29,3 +44,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
