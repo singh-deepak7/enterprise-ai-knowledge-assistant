@@ -15,9 +15,20 @@ class Settings(BaseSettings):
     CHAT_MODEL: str = "gpt-5"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
 
-    UPLOAD_DIR: str = "app/uploads"
     CHROMA_DB_DIR: str = "app/chroma_db"
+    CHROMA_COLLECTION: str = "enterprise_knowledge"
 
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
+
+    EMBEDDING_BATCH_SIZE: int = 100
+
+    TOP_K_RESULTS: int = 5
+    SIMILARITY_SCORE_THRESHOLD: float = 0.7
+
+    AI_DEBUG: bool = False
+
+    UPLOAD_DIR: str = "app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 25
 
     ALLOWED_EXTENSIONS: set[str] = {
