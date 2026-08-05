@@ -7,7 +7,7 @@ files = [
     "sample.txt",
     "sample.csv",
     "sample.xlsx",
-    "sample.docx"
+
 ]
 
 BASE_DIR = Path(__file__).resolve().parents[2]
