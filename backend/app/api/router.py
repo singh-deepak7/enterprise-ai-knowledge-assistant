@@ -8,3 +8,4 @@ api_router.include_router(
     health_router,
     tags=["Health"]
 )
+
