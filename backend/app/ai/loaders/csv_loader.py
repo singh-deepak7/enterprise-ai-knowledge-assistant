@@ -29,17 +29,19 @@ class CsvLoader(BaseLoader):
                 f"{column}: {'' if pd.isna(value) else value}"
                 for column, value in row.items()
             )
+            metadata = self.build_base_metadata(file_path)
 
-            document = Document(
-                page_content=page_content,
-                metadata={
-                "filename": file_path.name,
-                "extension": file_path.suffix.lower(),
-                "source": str(file_path),
-                "row_index": index,
-                "row_number": index + 1,
-            },
+            metadata.update(
+                {
+                    "row_index": index,
+                    "row_number": index + 1,
+                }
             )
+            document = Document(
+            page_content=page_content,
+            metadata=metadata,
+        )
+
 
             documents.append(document)
 

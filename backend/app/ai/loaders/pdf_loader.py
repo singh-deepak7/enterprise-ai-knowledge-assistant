@@ -21,14 +21,10 @@ class PdfLoader(BaseLoader):
         documents = loader.load()
 
         for index, document in enumerate(documents):
-            document.metadata.update(
-                {
-                    "filename": file_path.name,
-                    "extension": file_path.suffix.lower(),
-                    "source": str(file_path),
-                    "page_number": index + 1,
-                }
-            )
+            metadata = self.build_base_metadata(file_path)
+            metadata["page_number"] = index + 1
+
+            document.metadata.update(metadata)
 
         logger.info(
             "Loaded %d pages from PDF '%s'",

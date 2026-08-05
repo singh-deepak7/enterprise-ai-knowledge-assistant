@@ -21,13 +21,7 @@ class TxtLoader(BaseLoader):
         documents = loader.load()
 
         for document in documents:
-            document.metadata.update(
-                {
-                    "filename": file_path.name,
-                    "extension": file_path.suffix.lower(),
-                    "source": str(file_path),
-                }
-            )
+            document.metadata.update(self.build_base_metadata(file_path))
 
         logger.info(
             "Loaded text document '%s'",

@@ -42,16 +42,19 @@ class ExcelLoader(BaseLoader):
                     for column, value in row.items()
                 )
 
-                document = Document(
-                    page_content=page_content,
-                    metadata={
-                        "filename": file_path.name,
-                        "extension": file_path.suffix.lower(),
-                        "source": str(file_path),
+                metadata = self.build_base_metadata(file_path)
+
+                metadata.update(
+                    {
                         "sheet": sheet_name,
                         "row_index": index,
                         "row_number": index + 1,
-                    },
+                    }
+                )
+
+                document = Document(
+                    page_content=page_content,
+                    metadata = metadata,
                 )
 
                 documents.append(document)
