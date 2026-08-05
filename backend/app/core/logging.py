@@ -14,3 +14,12 @@ def setup_logging() -> None:
 
 
 logger = logging.getLogger("enterprise-ai")
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Returns a logger for the given module.
+
+    Example:
+        logger = get_logger(__name__)
+    """
+    return logging.getLogger(name)
