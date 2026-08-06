@@ -49,3 +49,10 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
         logger.debug("Generating query embedding.")
 
         return self._embeddings.embed_query(text)
+
+    @property
+    def embedding_function(self):
+        """
+        Return the LangChain embedding implementation.
+        """
+        return self._embeddings
