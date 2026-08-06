@@ -19,6 +19,8 @@ from app.ai.retrieval.retrieval_service import RetrievalService
 from app.ai.retrieval.source_attribution import SourceAttribution
 from langgraph.graph.state import CompiledStateGraph
 
+from app.ai.memory.conversation_memory import ConversationMemory
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class AgenticWorkflow:
         prompt_builder: PromptBuilder | None = None,
         llm_service: LLMService | None = None,
         source_attribution: SourceAttribution | None = None,
+        conversation_memory: ConversationMemory | None = None,
     ) -> None:
         self._retrieval_service = (
             retrieval_service or RetrievalService()
@@ -47,6 +50,9 @@ class AgenticWorkflow:
         )
         self._source_attribution = (
             source_attribution or SourceAttribution()
+        )
+        self._conversation_memory = (
+        conversation_memory or ConversationMemory()
         )
 
         self._graph = self._build_graph()
@@ -67,6 +73,13 @@ class AgenticWorkflow:
             question=question,
         )
 
+        session_id = "default"
+
+        self._conversation_memory.add_user_message(
+            session_id=session_id,
+            message=question,
+        )
+
         result = self._graph.invoke(
             initial_state,
         )
@@ -76,9 +89,20 @@ class AgenticWorkflow:
         )
 
         if isinstance(result, GraphState):
+            self._conversation_memory.add_assistant_message(
+                session_id=session_id,
+                message=result.answer,
+            )
             return result
 
-        return GraphState(**result)
+        result_state = GraphState(**result)
+
+        self._conversation_memory.add_assistant_message(
+            session_id=session_id,
+            message=result_state.answer,
+        )
+
+        return result_state
 
     def _planner(
         self,
