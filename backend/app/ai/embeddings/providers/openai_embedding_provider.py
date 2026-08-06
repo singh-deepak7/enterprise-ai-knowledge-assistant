@@ -2,7 +2,7 @@ import logging
 
 from langchain_openai import OpenAIEmbeddings
 
-from app.ai.providers.base_embedding_provider import BaseEmbeddingProvider
+from app.ai.embeddings.providers.base_embedding_provider import BaseEmbeddingProvider
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

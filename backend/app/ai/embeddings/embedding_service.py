@@ -2,8 +2,8 @@ import logging
 
 from langchain_core.documents import Document
 
-from app.ai.providers.base_embedding_provider import BaseEmbeddingProvider
-from app.ai.providers.openai_embedding_provider import (
+from app.ai.embeddings.providers.base_embedding_provider import BaseEmbeddingProvider
+from app.ai.embeddings.providers.openai_embedding_provider import (
     OpenAIEmbeddingProvider,
 )
 
