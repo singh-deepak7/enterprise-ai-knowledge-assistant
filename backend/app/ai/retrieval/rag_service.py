@@ -5,6 +5,9 @@ from langchain_core.documents import Document
 from app.ai.llm.llm_service import LLMService
 from app.ai.llm.prompt_builder import PromptBuilder
 from app.ai.retrieval.retrieval_service import RetrievalService
+from app.ai.retrieval.source_attribution import (
+    SourceAttribution,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,19 +19,26 @@ class RAGService:
     """
 
     def __init__(
-        self,
-        retrieval_service: RetrievalService | None = None,
-        prompt_builder: PromptBuilder | None = None,
-        llm_service: LLMService | None = None,
+    self,
+    retrieval_service: RetrievalService | None = None,
+    prompt_builder: PromptBuilder | None = None,
+    llm_service: LLMService | None = None,
+    source_attribution: SourceAttribution | None = None,
     ) -> None:
         self._retrieval_service = (
             retrieval_service or RetrievalService()
         )
+
         self._prompt_builder = (
             prompt_builder or PromptBuilder()
         )
+
         self._llm_service = (
             llm_service or LLMService()
+        )
+
+        self._source_attribution = (
+            source_attribution or SourceAttribution()
         )
 
     def generate_answer(
@@ -77,9 +87,13 @@ class RAGService:
 
             logger.info("RAG pipeline completed successfully.")
 
+            sources = self._source_attribution.build_sources(
+                documents,
+            )
+
             return {
                 "answer": answer,
-                "sources": documents,
+                "sources": sources,
             }
 
         except Exception:

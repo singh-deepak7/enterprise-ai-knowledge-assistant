@@ -22,6 +22,15 @@ def test_generate_answer_success() -> None:
         )
     ]
 
+    source_attribution = Mock()
+    source_attribution.build_sources.return_value = [
+        {
+            "source": "employee.pdf",
+            "page": 12,
+            "chunk": 4,
+        }
+    ]
+
     retrieval_service = Mock()
     retrieval_service.retrieve.return_value = documents
 
@@ -32,9 +41,10 @@ def test_generate_answer_success() -> None:
     llm_service.generate.return_value = "Generated Answer"
 
     rag_service = RAGService(
-        retrieval_service=retrieval_service,
-        prompt_builder=prompt_builder,
-        llm_service=llm_service,
+           retrieval_service=retrieval_service,
+           prompt_builder=prompt_builder,
+           llm_service=llm_service,
+           source_attribution=source_attribution,
     )
 
     # Act
@@ -48,6 +58,9 @@ def test_generate_answer_success() -> None:
         query="How many vacation days do employees receive?",
         top_k=5,
     )
+    source_attribution.build_sources.assert_called_once_with(
+    documents,
+)
 
     prompt_builder.build_prompt.assert_called_once_with(
         question="How many vacation days do employees receive?",
@@ -59,7 +72,14 @@ def test_generate_answer_success() -> None:
     )
 
     assert result["answer"] == "Generated Answer"
-    assert result["sources"] == documents
+    #assert result["sources"] == documents
+    assert result["sources"] == [
+        {
+            "source": "employee.pdf",
+            "page": 12,
+            "chunk": 4,
+        }
+    ]
 
 
 def test_generate_answer_with_no_documents() -> None:
