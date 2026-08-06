@@ -52,8 +52,8 @@ class AgenticWorkflow:
         self._graph = self._build_graph()
 
     def invoke(
-        self,
-        question: str,
+    self,
+    question: str,
     ) -> GraphState:
         """
         Execute the complete agentic workflow.
@@ -67,7 +67,7 @@ class AgenticWorkflow:
             question=question,
         )
 
-        result: GraphState = self._graph.invoke(
+        result = self._graph.invoke(
             initial_state,
         )
 
@@ -75,7 +75,10 @@ class AgenticWorkflow:
             "Agentic workflow completed."
         )
 
-        return result
+        if isinstance(result, GraphState):
+            return result
+
+        return GraphState(**result)
 
     def _planner(
         self,
