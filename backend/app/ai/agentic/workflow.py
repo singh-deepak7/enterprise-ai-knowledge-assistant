@@ -90,6 +90,24 @@ class AgenticWorkflow:
 
         return planner_node(state)
 
+    def _route_after_planner(
+        self,
+        state: GraphState,
+    ) -> str:
+        """
+        Determine the next workflow step after planning.
+        """
+
+        logger.debug(
+            "Planner routing decision: requires_retrieval=%s",
+            state.requires_retrieval,
+        )
+
+        if state.requires_retrieval:
+            return "retrieval"
+
+        return "reasoning"
+
     def _retrieval(
         self,
         state: GraphState,
@@ -166,9 +184,13 @@ class AgenticWorkflow:
             "planner",
         )
 
-        builder.add_edge(
+        builder.add_conditional_edges(
             "planner",
-            "retrieval",
+            self._route_after_planner,
+                {
+                    "retrieval": "retrieval",
+                    "reasoning": "reasoning",
+                },
         )
 
         builder.add_edge(

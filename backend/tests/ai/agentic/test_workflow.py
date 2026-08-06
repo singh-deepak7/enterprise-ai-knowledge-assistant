@@ -9,6 +9,11 @@ from app.ai.llm.prompt_builder import PromptBuilder
 from app.ai.retrieval.retrieval_service import RetrievalService
 from app.ai.retrieval.source_attribution import SourceAttribution
 
+from unittest.mock import MagicMock
+
+from app.ai.agentic.graph_state import GraphState
+from app.ai.agentic.workflow import AgenticWorkflow
+
 
 def test_workflow_compiles() -> None:
     """
@@ -131,3 +136,32 @@ def test_validation_wrapper() -> None:
     assert result is state
 
     source_service.build_sources.assert_called_once()
+
+def test_route_after_planner_with_retrieval():
+    workflow = create_workflow()
+
+    state = GraphState(
+        question="What is comprehensive coverage?",
+        requires_retrieval=True,
+    )
+
+    assert workflow._route_after_planner(state) == "retrieval"
+
+
+def test_route_after_planner_without_retrieval():
+    workflow = create_workflow()
+
+    state = GraphState(
+        question="Hello",
+        requires_retrieval=False,
+    )
+
+    assert workflow._route_after_planner(state) == "reasoning"
+
+def create_workflow():
+    return AgenticWorkflow(
+        retrieval_service=MagicMock(),
+        prompt_builder=MagicMock(),
+        llm_service=MagicMock(),
+        source_attribution=MagicMock(),
+    )
