@@ -1,54 +1,89 @@
 """
-LangGraph Planner Node.
+Planner node for the LangGraph workflow.
 
-The planner is responsible for initializing the workflow state and
-deciding the execution strategy.
-
-Currently, Sprint 7 supports a single RAG workflow. This node exists
-to make future routing (SQL, Web Search, Tool Calling, Multi-Agent)
-easy to introduce without changing the graph structure.
+Determines how downstream nodes should execute by
+classifying user intent and selecting an appropriate
+retrieval strategy.
 """
 
 from __future__ import annotations
 
 import logging
-import time
+import re
 
 from app.ai.agentic.graph_state import GraphState
 
 logger = logging.getLogger(__name__)
 
 
-def planner_node(
-    state: GraphState,
-) -> GraphState:
+class PlannerNode:
     """
-    Initialize workflow metadata.
-
-    Args:
-        state:
-            Current graph state.
-
-    Returns:
-        Updated GraphState.
+    Produces an execution plan for the workflow.
     """
 
-    logger.info("Planner node started.")
+    _GREETING_PATTERN = re.compile(
+        r"^(hi|hello|hey|good morning|good afternoon|good evening)\b",
+        re.IGNORECASE,
+    )
 
-    start = time.perf_counter()
+    _COMPARISON_PATTERN = re.compile(
+        r"\b(compare|difference|versus|vs)\b",
+        re.IGNORECASE,
+    )
 
-    if not state.question.strip():
-        raise ValueError("Question cannot be empty.")
+    _SUMMARY_PATTERN = re.compile(
+        r"\b(summarize|summary|summarise)\b",
+        re.IGNORECASE,
+    )
 
-    state.metadata["planner"] = {
-        "workflow": "rag",
-        "top_k": 5,
-        "duration_ms": round(
-            (time.perf_counter() - start) * 1000,
-            2,
-        ),
-    }
+    _DEFINITION_PATTERN = re.compile(
+        r"\b(what is|what are|define|definition)\b",
+        re.IGNORECASE,
+    )
 
-    logger.info("Planner node completed.")
+    def __call__(self, state: GraphState) -> GraphState:
+        """
+        Generate an execution plan from the user question.
+        """
 
-    return state
+        question = state.question.strip()
+
+        logger.info("Planner evaluating question: %s", question)
+
+        if self._GREETING_PATTERN.search(question):
+            state.intent = "greeting"
+            state.retrieval_strategy = "none"
+            state.top_k = 0
+            state.requires_retrieval = False
+
+        elif self._COMPARISON_PATTERN.search(question):
+            state.intent = "comparison"
+            state.retrieval_strategy = "hybrid"
+            state.top_k = 8
+
+        elif self._SUMMARY_PATTERN.search(question):
+            state.intent = "summarization"
+            state.retrieval_strategy = "semantic"
+            state.top_k = 10
+
+        elif self._DEFINITION_PATTERN.search(question):
+            state.intent = "definition"
+            state.retrieval_strategy = "hybrid"
+            state.top_k = 3
+
+        else:
+            state.intent = "general_qa"
+            state.retrieval_strategy = "hybrid"
+            state.top_k = 5
+
+        logger.info(
+            "Planner result intent=%s strategy=%s top_k=%s retrieval=%s",
+            state.intent,
+            state.retrieval_strategy,
+            state.top_k,
+            state.requires_retrieval,
+        )
+
+        return state
+
+planner_node = PlannerNode()

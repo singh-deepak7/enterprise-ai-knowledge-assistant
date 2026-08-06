@@ -1,73 +1,69 @@
-import pytest
-
 from app.ai.agentic.graph_state import GraphState
-from app.ai.agentic.nodes.planner_node import planner_node
+from app.ai.agentic.nodes.planner_node import PlannerNode
 
 
-def test_planner_node_success() -> None:
-    """
-    Planner should initialize workflow metadata.
-    """
+def test_planner_detects_greeting():
+    planner = PlannerNode()
 
-    state = GraphState(
-        question="What is comprehensive coverage?",
-    )
+    state = GraphState(question="Hello")
 
-    result = planner_node(state)
+    result = planner(state)
 
-    assert result is state
-
-    assert "planner" in state.metadata
-
-    planner = state.metadata["planner"]
-
-    assert planner["workflow"] == "rag"
-    assert planner["top_k"] == 5
-    assert planner["duration_ms"] >= 0
+    assert result.intent == "greeting"
+    assert result.requires_retrieval is False
+    assert result.retrieval_strategy == "none"
+    assert result.top_k == 0
 
 
-def test_planner_node_preserves_question() -> None:
-    """
-    Planner should not modify the question.
-    """
+def test_planner_detects_definition():
+    planner = PlannerNode()
 
-    state = GraphState(
-        question="Coverage?",
-    )
+    state = GraphState(question="What is comprehensive coverage?")
 
-    planner_node(state)
+    result = planner(state)
 
-    assert state.question == "Coverage?"
+    assert result.intent == "definition"
+    assert result.retrieval_strategy == "hybrid"
+    assert result.top_k == 3
+    assert result.requires_retrieval is True
 
 
-def test_planner_node_preserves_existing_metadata() -> None:
-    """
-    Existing metadata should not be overwritten.
-    """
+def test_planner_detects_comparison():
+    planner = PlannerNode()
 
     state = GraphState(
-        question="Coverage?",
-        metadata={
-            "existing": {
-                "value": 1,
-            },
-        },
+        question="Compare collision and comprehensive coverage"
     )
 
-    planner_node(state)
+    result = planner(state)
 
-    assert state.metadata["existing"]["value"] == 1
-    assert "planner" in state.metadata
+    assert result.intent == "comparison"
+    assert result.retrieval_strategy == "hybrid"
+    assert result.top_k == 8
 
 
-def test_planner_node_empty_question() -> None:
-    """
-    Empty questions should raise an error.
-    """
+def test_planner_detects_summary():
+    planner = PlannerNode()
+
+    state = GraphState(question="Summarize this policy")
+
+    result = planner(state)
+
+    assert result.intent == "summarization"
+    assert result.retrieval_strategy == "semantic"
+    assert result.top_k == 10
+
+
+def test_planner_defaults_to_general_qa():
+    planner = PlannerNode()
 
     state = GraphState(
-        question="   ",
+        question="Does my policy cover hail damage?"
     )
 
-    with pytest.raises(ValueError):
-        planner_node(state)
+    result = planner(state)
+
+    assert result.intent == "general_qa"
+    assert result.retrieval_strategy == "hybrid"
+    assert result.top_k == 5
+    assert result.requires_retrieval is True
