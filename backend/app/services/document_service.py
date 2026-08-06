@@ -1,5 +1,6 @@
 from fastapi import UploadFile
 
+from app.ai.indexing.indexing_service import IndexingService
 from app.core.logging import logger
 from app.schemas.storage import StorageResult
 from app.services.storage_service import StorageService
@@ -8,20 +9,27 @@ from app.services.validation_service import ValidationService
 
 class DocumentService:
     """
-    Handles the document upload workflow.
+    Handles the complete document upload workflow.
     """
 
     def __init__(
         self,
         validation_service: ValidationService,
         storage_service: StorageService,
+        indexing_service: IndexingService | None = None,
     ) -> None:
         self.validation_service = validation_service
         self.storage_service = storage_service
+        self.indexing_service = (
+            indexing_service or IndexingService()
+        )
 
-    async def upload(self, file: UploadFile) -> StorageResult:
+    async def upload(
+        self,
+        file: UploadFile,
+    ) -> StorageResult:
         """
-        Validate and store an uploaded document.
+        Validate, store, and index an uploaded document.
         """
 
         logger.info("Starting upload workflow")
@@ -31,8 +39,22 @@ class DocumentService:
         result = await self.storage_service.save(file)
 
         logger.info(
-            "Upload completed successfully. Document ID=%s",
+            "Stored document '%s'. Starting indexing.",
+            result.original_filename,
+        )
+
+        chunk_count = self.indexing_service.index_document(
+            result.file_path,
+        )
+
+        logger.info(
+            "Indexed %d chunk(s) for document %s.",
+            chunk_count,
             result.document_id,
+        )
+
+        logger.info(
+            "Upload workflow completed successfully."
         )
 
         return result
