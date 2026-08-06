@@ -9,26 +9,60 @@ from dataclasses import dataclass, field
 from langchain_core.documents import Document
 
 
-@dataclass
+@dataclass(slots=True)
 class GraphState:
     """
-    Shared workflow state for the LangGraph pipeline.
+    Shared mutable state for the agentic workflow.
+
+    Each node enriches this object instead of creating
+    new response objects.
     """
 
-    # Original user query
+    # ==========================================================
+    # User Request
+    # ==========================================================
+
     question: str
 
-    # Retrieved context documents
+    # ==========================================================
+    # Planner Output
+    # ==========================================================
+
+    intent: str = "general_qa"
+
+    retrieval_strategy: str = "hybrid"
+
+    top_k: int = 5
+
+    requires_retrieval: bool = True
+
+    # ==========================================================
+    # Retrieval Output
+    # ==========================================================
+
     retrieved_chunks: list[Document] = field(default_factory=list)
 
-    # Prompt generated for the LLM
+    # ==========================================================
+    # Reasoning Output
+    # ==========================================================
+
     prompt: str = ""
 
-    # LLM response
     answer: str = ""
 
-    # Final source attribution
+    # ==========================================================
+    # Validation Output
+    # ==========================================================
+
+    validated: bool = False
+
+    # Will be used in Sprint 8.4
+    confidence_score: float = 0.0
+
+    # ==========================================================
+    # Response Metadata
+    # ==========================================================
+
     sources: list[dict[str, object]] = field(default_factory=list)
 
-    # Workflow metadata
     metadata: dict[str, object] = field(default_factory=dict)
