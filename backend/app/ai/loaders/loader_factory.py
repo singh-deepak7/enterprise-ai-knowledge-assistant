@@ -21,7 +21,8 @@ class LoaderFactory:
     }
 
     @classmethod
-    def get_loader(cls, file_path: Path) -> BaseLoader:
+    def get_loader(cls, file_path: str) -> BaseLoader:
+        file_path = Path(file_path)
         extension = file_path.suffix.lower()
 
         loader_class = cls._loaders.get(extension)

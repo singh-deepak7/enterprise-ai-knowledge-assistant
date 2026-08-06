@@ -16,11 +16,12 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
     def __init__(self) -> None:
         logger.info(
             "Initializing OpenAI embedding provider with model '%s'.",
-            settings.OPENAI_EMBEDDING_MODEL,
+            settings.EMBEDDING_MODEL,
         )
 
         self._embeddings = OpenAIEmbeddings(
-            model=settings.OPENAI_EMBEDDING_MODEL,
+            model=settings.EMBEDDING_MODEL,
+            api_key=settings.OPENAI_API_KEY,
         )
 
     def embed_documents(
