@@ -39,7 +39,7 @@ def retrieval_node(
     start = time.perf_counter()
 
     try:
-        top_k = state.metadata.get("top_k", 5)
+        top_k = state.metadata.get("planner", {}).get("top_k", 5)
         documents = retrieval_service.retrieve(
             query=state.question,
             top_k=top_k,
@@ -54,6 +54,7 @@ def retrieval_node(
 
         state.metadata["retrieval"] = {
             "chunk_count": len(documents),
+            "top_k": top_k,
             "duration_ms": elapsed_ms,
         }
 
