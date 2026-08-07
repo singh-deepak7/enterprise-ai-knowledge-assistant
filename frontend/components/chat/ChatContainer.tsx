@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { streamChat } from "@/services/chatStreamService";
 
+import type { ChatSource } from "@/types/chat";
+
 function getWorkflowStatus(event: unknown): string | null {
   if (typeof event !== "object" || event === null) {
     return null;
@@ -42,6 +44,8 @@ export default function ChatContainer() {
 
   const [error, setError] = useState<string | null>(null);
 
+  const [sources, setSources] = useState<ChatSource[]>([]);
+
   async function handleSubmit() {
     if (!question.trim()) {
       return;
@@ -51,6 +55,7 @@ export default function ChatContainer() {
     setError(null);
     setAnswer("");
     setConfidenceScore(null);
+    setSources([]);
     setEvents([]);
 
     try {
@@ -79,6 +84,10 @@ export default function ChatContainer() {
                 typeof value.confidence_score === "number"
               ) {
                 setConfidenceScore(value.confidence_score);
+              }
+
+              if ("sources" in value && Array.isArray(value.sources)) {
+                setSources(value.sources);
               }
             }
           }
@@ -190,6 +199,27 @@ export default function ChatContainer() {
           <h2 className="font-semibold">Answer</h2>
 
           <p className="mt-2">{answer}</p>
+        </div>
+      )}
+
+      {sources.length > 0 && (
+        <div
+          className="
+      rounded-md
+      border
+      p-4
+    "
+        >
+          <h2 className="font-semibold">📚 Sources</h2>
+
+          <div className="mt-3 space-y-2">
+            {sources.map((source, index) => (
+              <div key={index} className="text-sm">
+                📄 {source.source}
+                <div>Page {source.page}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>
