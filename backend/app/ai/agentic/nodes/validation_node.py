@@ -2,7 +2,8 @@
 LangGraph Validation Node.
 
 This node performs the final workflow validation by building source
-attribution and updating the graph state with workflow metadata.
+attribution, calculating confidence, and updating the graph state with
+workflow metadata.
 """
 
 from __future__ import annotations
@@ -14,6 +15,43 @@ from app.ai.agentic.graph_state import GraphState
 from app.ai.retrieval.source_attribution import SourceAttribution
 
 logger = logging.getLogger(__name__)
+
+FALLBACK_RESPONSE = (
+    "I couldn't find that information in the provided documents."
+)
+
+
+def _calculate_confidence(state: GraphState) -> float:
+    """
+    Calculate a deterministic confidence score.
+
+    Scoring:
+        +0.30 -> Retrieved documents
+        +0.30 -> Sources attributed
+        +0.20 -> Non-empty answer
+        +0.20 -> Answer is not fallback
+
+    Maximum = 1.0
+    """
+
+    score = 0.0
+
+    if state.retrieved_chunks:
+        score += 0.30
+
+    if state.sources:
+        score += 0.30
+
+    if state.answer.strip():
+        score += 0.20
+
+    if (
+        state.answer.strip()
+        and state.answer.strip() != FALLBACK_RESPONSE
+    ):
+        score += 0.20
+
+    return round(min(score, 1.0), 2)
 
 
 def validation_node(
@@ -49,21 +87,34 @@ def validation_node(
         )
 
         state.sources = sources
+        state.validated = True
+        state.confidence_score = _calculate_confidence(state)
 
         elapsed_ms = round(
             (time.perf_counter() - start) * 1000,
             2,
         )
 
-        state.metadata["validation"] = {
-            "duration_ms": elapsed_ms,
-            "source_count": len(sources),
-            "workflow_complete": True,
-        }
+        # Preserve any existing metadata
+        state.metadata.setdefault("validation", {})
+
+        state.metadata["validation"].update(
+            {
+                "duration_ms": elapsed_ms,
+                "source_count": len(sources),
+                "workflow_complete": True,
+                "validated": True,
+                "confidence_score": state.confidence_score,
+            }
+        )
 
         logger.info(
-            "Validation completed with %d source(s).",
+            (
+                "Validation completed with %d source(s). "
+                "Confidence %.2f"
+            ),
             len(sources),
+            state.confidence_score,
         )
 
         return state

@@ -199,3 +199,113 @@ def test_validation_node_preserves_question() -> None:
     )
 
     assert state.question == "What is liability insurance?"
+
+def test_validation_assigns_full_confidence():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = [
+        {
+            "source": "policy.pdf",
+            "page": 2,
+        }
+    ]
+
+    state = GraphState(
+        question="Coverage?",
+        retrieved_chunks=[
+            Document(
+                page_content="Coverage",
+                metadata={
+                    "source": "policy.pdf",
+                    "page": 2,
+                },
+            )
+        ],
+        answer="Comprehensive coverage protects against theft.",
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.validated is True
+    assert result.confidence_score == 1.0
+
+def test_validation_zero_confidence_without_answer():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = []
+
+    state = GraphState(
+        question="Coverage?",
+        answer="",
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.confidence_score == 0.0
+
+
+def test_validation_reduces_confidence_for_fallback_answer():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = [
+        {
+            "source": "policy.pdf",
+            "page": 2,
+        }
+    ]
+
+    state = GraphState(
+        question="Coverage?",
+        retrieved_chunks=[
+            Document(
+                page_content="Coverage",
+                metadata={
+                    "source": "policy.pdf",
+                    "page": 2,
+                },
+            )
+        ],
+        answer=(
+            "I couldn't find that information "
+            "in the provided documents."
+        ),
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.confidence_score == 0.8
+
+def test_validation_populates_sources():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = [
+        {
+            "source": "policy.pdf",
+            "page": 5,
+        }
+    ]
+
+    state = GraphState(
+        question="Coverage?",
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.sources == [
+        {
+            "source": "policy.pdf",
+            "page": 5,
+        }
+    ]
