@@ -1,8 +1,7 @@
 import type { ChatRequest } from "@/types/chat";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 export interface WorkflowUpdateEvent {
   type: "updates";
@@ -17,35 +16,26 @@ export interface TokenStreamEvent {
   };
 }
 
-export type ChatStreamEvent =
-  | WorkflowUpdateEvent
-  | TokenStreamEvent;
+export type ChatStreamEvent = WorkflowUpdateEvent | TokenStreamEvent;
 
 export async function streamChat(
   request: ChatRequest,
   onMessage: (event: ChatStreamEvent) => void,
 ): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/chat/stream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
+  const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(request),
+  });
 
   if (!response.ok) {
-    throw new Error(
-      `Streaming request failed: ${response.status}`,
-    );
+    throw new Error(`Streaming request failed: ${response.status}`);
   }
 
   if (!response.body) {
-    throw new Error(
-      "Streaming response body missing",
-    );
+    throw new Error("Streaming response body missing");
   }
 
   const reader = response.body.getReader();
@@ -73,9 +63,7 @@ export async function streamChat(
         continue;
       }
 
-      const payload = event
-        .replace("data:", "")
-        .trim();
+      const payload = event.replace("data:", "").trim();
 
       if (!payload) {
         continue;
@@ -92,9 +80,7 @@ export async function streamChat(
   }
 }
 
-function isChatStreamEvent(
-  value: unknown,
-): value is ChatStreamEvent {
+function isChatStreamEvent(value: unknown): value is ChatStreamEvent {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -105,10 +91,7 @@ function isChatStreamEvent(
   }
 
   if (value.type === "updates") {
-    return (
-      typeof value.data === "object" &&
-      value.data !== null
-    );
+    return typeof value.data === "object" && value.data !== null;
   }
 
   if (value.type === "token") {
@@ -124,4 +107,28 @@ function isChatStreamEvent(
   }
 
   return false;
+}
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    let message = "Failed to delete document.";
+
+    try {
+      const error = (await response.json()) as {
+        detail?: string;
+        message?: string;
+      };
+
+      message = error.detail ?? error.message ?? message;
+    } catch {
+      // Keep the default message when the
+      // backend response is not JSON.
+    }
+
+    throw new Error(message);
+  }
 }

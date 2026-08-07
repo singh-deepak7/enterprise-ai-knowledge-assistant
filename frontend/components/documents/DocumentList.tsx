@@ -2,11 +2,11 @@ import type { DocumentSummary } from "@/types/document";
 
 interface DocumentListProps {
   documents: DocumentSummary[];
+  deletingDocumentId: string | null;
+  onDelete: (document: DocumentSummary) => void;
 }
 
-function formatFileSize(
-  sizeBytes: number,
-): string {
+function formatFileSize(sizeBytes: number): string {
   if (sizeBytes < 1024) {
     return `${sizeBytes} B`;
   }
@@ -22,9 +22,7 @@ function formatFileSize(
   return `${sizeMb.toFixed(1)} MB`;
 }
 
-function getFileType(
-  contentType: string,
-): string {
+function getFileType(contentType: string): string {
   switch (contentType) {
     case "application/pdf":
       return "PDF";
@@ -45,13 +43,13 @@ function getFileType(
 
 export default function DocumentList({
   documents,
+  deletingDocumentId,
+  onDelete,
 }: DocumentListProps) {
   if (documents.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
-        <p className="font-medium">
-          No documents uploaded
-        </p>
+        <p className="font-medium">No documents uploaded</p>
 
         <p className="mt-1 text-sm text-muted-foreground">
           Upload a document from the chat page to get started.
@@ -62,32 +60,39 @@ export default function DocumentList({
 
   return (
     <div className="space-y-3">
-      {documents.map((document) => (
-        <div
-          key={document.document_id}
-          className="flex items-center gap-4 rounded-lg border p-4"
-        >
-          <div className="text-2xl">
-            📄
-          </div>
+      {documents.map((document) => {
+        const isDeleting = deletingDocumentId === document.document_id;
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">
-              {document.original_filename}
-            </p>
+        return (
+          <div
+            key={document.document_id}
+            className="flex items-center gap-4 rounded-lg border p-4"
+          >
+            <div className="text-2xl">📄</div>
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              {getFileType(
-                document.content_type,
-              )}
-              {" • "}
-              {formatFileSize(
-                document.size_bytes,
-              )}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">
+                {document.original_filename}
+              </p>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                {getFileType(document.content_type)}
+                {" • "}
+                {formatFileSize(document.size_bytes)}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={deletingDocumentId !== null}
+              onClick={() => onDelete(document)}
+              className="rounded-md border px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
