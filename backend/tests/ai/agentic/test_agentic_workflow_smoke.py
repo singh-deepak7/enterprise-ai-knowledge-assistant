@@ -62,6 +62,7 @@ def test_agentic_workflow_smoke() -> None:
 
     state = workflow.invoke(
         question="What is comprehensive coverage?",
+        session_id="TEST_SESSION_ID",
     )
 
     assert (

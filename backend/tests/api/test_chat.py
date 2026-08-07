@@ -60,6 +60,7 @@ def test_chat_success() -> None:
 
     workflow.invoke.assert_called_once_with(
         question="Vacation policy?",
+        session_id="test-session",
     )
 
 

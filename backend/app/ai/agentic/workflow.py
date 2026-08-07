@@ -64,19 +64,20 @@ class AgenticWorkflow:
     def invoke(
         self,
         question: str,
+        session_id: str,
     ) -> GraphState:
         """
         Execute the complete agentic workflow.
         """
 
         workflow_start = time.perf_counter()
-
-        session_id = "default"
         request_id = str(uuid.uuid4())
 
         logger.info(
-            "Starting agentic workflow [request_id=%s]",
+            "Starting agentic workflow "
+            "[request_id=%s session_id=%s]",
             request_id,
+            session_id,
         )
 
         history = self._conversation_memory.get_history(
@@ -105,7 +106,11 @@ class AgenticWorkflow:
                 result = GraphState(**result)
 
             workflow_duration_ms = round(
-                (time.perf_counter() - workflow_start) * 1000,
+                (
+                    time.perf_counter()
+                    - workflow_start
+                )
+                * 1000,
                 2,
             )
 
@@ -117,6 +122,7 @@ class AgenticWorkflow:
             result.metadata["workflow"].update(
                 {
                     "request_id": request_id,
+                    "session_id": session_id,
                     "status": "success",
                     "duration_ms": workflow_duration_ms,
                 }
@@ -129,8 +135,10 @@ class AgenticWorkflow:
 
             logger.info(
                 "Agentic workflow completed "
-                "[request_id=%s duration=%.2fms]",
+                "[request_id=%s session_id=%s "
+                "duration=%.2fms]",
                 request_id,
+                session_id,
                 workflow_duration_ms,
             )
 
@@ -138,19 +146,24 @@ class AgenticWorkflow:
 
         except Exception as ex:
             workflow_duration_ms = round(
-                (time.perf_counter() - workflow_start) * 1000,
+                (
+                    time.perf_counter()
+                    - workflow_start
+                )
+                * 1000,
                 2,
             )
 
             logger.exception(
                 "Agentic workflow failed "
-                "[request_id=%s duration=%.2fms error=%s]",
+                "[request_id=%s session_id=%s "
+                "duration=%.2fms error=%s]",
                 request_id,
+                session_id,
                 workflow_duration_ms,
                 type(ex).__name__,
             )
 
-            # Preserve failure metadata for future observability.
             initial_state.metadata.setdefault(
                 "workflow",
                 {},
@@ -159,6 +172,7 @@ class AgenticWorkflow:
             initial_state.metadata["workflow"].update(
                 {
                     "request_id": request_id,
+                    "session_id": session_id,
                     "status": "failed",
                     "duration_ms": workflow_duration_ms,
                     "error_type": type(ex).__name__,
@@ -167,80 +181,6 @@ class AgenticWorkflow:
             )
 
             raise
-
-    def stream(
-        self,
-        question: str,
-    ):
-        """
-        Stream LangGraph workflow events.
-
-        Emits:
-        - workflow node updates
-        - LLM message chunks
-
-        Used by the SSE chat endpoint.
-        """
-
-        session_id = "default"
-        request_id = str(uuid.uuid4())
-
-        logger.info(
-            "Starting streaming workflow [request_id=%s]",
-            request_id,
-        )
-
-        history = self._conversation_memory.get_history(
-            session_id,
-        )
-
-        initial_state = GraphState(
-            question=question,
-            request_id=request_id,
-            conversation_history=history,
-        )
-
-        self._conversation_memory.add_user_message(
-            session_id=session_id,
-            message=question,
-        )
-
-        for stream_mode, event in self._graph.stream(
-            initial_state,
-            stream_mode=[
-                "updates",
-                "messages",
-            ],
-        ):
-            if stream_mode == "updates":
-                yield {
-                    "type": "updates",
-                    "data": event,
-                }
-
-                continue
-
-            if stream_mode == "messages":
-                message_chunk, metadata = event
-
-                content = getattr(
-                    message_chunk,
-                    "content",
-                    "",
-                )
-
-                if not isinstance(content, str) or not content:
-                    continue
-
-                yield {
-                    "type": "token",
-                    "data": {
-                        "content": content,
-                        "node": metadata.get(
-                            "langgraph_node"
-                        ),
-                    },
-                }
 
     def _planner(
         self,
@@ -261,7 +201,8 @@ class AgenticWorkflow:
         """
 
         logger.debug(
-            "Planner routing decision: requires_retrieval=%s",
+            "Planner routing decision: "
+            "requires_retrieval=%s",
             state.requires_retrieval,
         )
 

@@ -44,6 +44,7 @@ def chat(
     try:
         state = workflow.invoke(
             question=request.question,
+            session_id=request.session_id,
         )
 
         logger.info("Chat request completed.")
