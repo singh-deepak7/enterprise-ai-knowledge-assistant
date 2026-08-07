@@ -6,26 +6,13 @@ import { uploadDocument } from "@/services/uploadService";
 import type { UploadResponse } from "@/types/upload";
 
 const MAX_UPLOAD_SIZE_MB = 25;
-const MAX_UPLOAD_SIZE_BYTES =
-  MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".txt",
-  ".csv",
-  ".xlsx",
-];
+const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".csv", ".xlsx"];
 
-const ACCEPTED_FILE_TYPES = [
-  ".pdf",
-  ".txt",
-  ".csv",
-  ".xlsx",
-].join(",");
+const ACCEPTED_FILE_TYPES = [".pdf", ".txt", ".csv", ".xlsx"].join(",");
 
-function formatFileSize(
-  sizeBytes: number,
-): string {
+function formatFileSize(sizeBytes: number): string {
   if (sizeBytes < 1024) {
     return `${sizeBytes} B`;
   }
@@ -41,75 +28,45 @@ function formatFileSize(
   return `${sizeMb.toFixed(1)} MB`;
 }
 
-function getFileExtension(
-  filename: string,
-): string {
-  const lastDotIndex =
-    filename.lastIndexOf(".");
+function getFileExtension(filename: string): string {
+  const lastDotIndex = filename.lastIndexOf(".");
 
   if (lastDotIndex === -1) {
     return "";
   }
 
-  return filename
-    .slice(lastDotIndex)
-    .toLowerCase();
+  return filename.slice(lastDotIndex).toLowerCase();
 }
 
-function validateFile(
-  file: File,
-): string | null {
-  const extension =
-    getFileExtension(file.name);
+function validateFile(file: File): string | null {
+  const extension = getFileExtension(file.name);
 
-  if (
-    !ALLOWED_EXTENSIONS.includes(
-      extension,
-    )
-  ) {
-    return (
-      "Unsupported file type. " +
-      "Allowed types: PDF, TXT, CSV, XLSX."
-    );
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    return "Unsupported file type. " + "Allowed types: PDF, TXT, CSV, XLSX.";
   }
 
   if (file.size === 0) {
     return "The selected file is empty.";
   }
 
-  if (
-    file.size >
-    MAX_UPLOAD_SIZE_BYTES
-  ) {
-    return (
-      `File is too large. ` +
-      `Maximum size is ${MAX_UPLOAD_SIZE_MB} MB.`
-    );
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    return `File is too large. ` + `Maximum size is ${MAX_UPLOAD_SIZE_MB} MB.`;
   }
 
   return null;
 }
 
 export default function DocumentUpload() {
-  const [selectedFile, setSelectedFile] =
-    useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [uploading, setUploading] =
-    useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [result, setResult] =
-    useState<UploadResponse | null>(
-      null,
-    );
+  const [result, setResult] = useState<UploadResponse | null>(null);
 
-  function handleFileChange(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file =
-      event.target.files?.[0] ?? null;
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
 
     setError(null);
     setResult(null);
@@ -119,8 +76,7 @@ export default function DocumentUpload() {
       return;
     }
 
-    const validationError =
-      validateFile(file);
+    const validationError = validateFile(file);
 
     if (validationError) {
       setSelectedFile(null);
@@ -135,15 +91,11 @@ export default function DocumentUpload() {
   }
 
   async function handleUpload() {
-    if (
-      !selectedFile ||
-      uploading
-    ) {
+    if (!selectedFile || uploading) {
       return;
     }
 
-    const validationError =
-      validateFile(selectedFile);
+    const validationError = validateFile(selectedFile);
 
     if (validationError) {
       setError(validationError);
@@ -155,18 +107,11 @@ export default function DocumentUpload() {
     setResult(null);
 
     try {
-      const response =
-        await uploadDocument(
-          selectedFile,
-        );
+      const response = await uploadDocument(selectedFile);
 
       setResult(response);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Document upload failed.",
-      );
+      setError(err instanceof Error ? err.message : "Document upload failed.");
     } finally {
       setUploading(false);
     }
@@ -175,9 +120,7 @@ export default function DocumentUpload() {
   return (
     <section className="space-y-4 rounded-lg border p-6">
       <div>
-        <h2 className="text-lg font-semibold">
-          Upload Document
-        </h2>
+        <h2 className="text-lg font-semibold">Upload Document</h2>
 
         <p className="text-sm text-muted-foreground">
           Add a document to the enterprise knowledge base.
@@ -202,14 +145,10 @@ export default function DocumentUpload() {
 
       {selectedFile && (
         <div className="rounded-md bg-muted p-3 text-sm">
-          <div className="font-medium">
-            {selectedFile.name}
-          </div>
+          <div className="font-medium">{selectedFile.name}</div>
 
           <div className="text-muted-foreground">
-            {formatFileSize(
-              selectedFile.size,
-            )}
+            {formatFileSize(selectedFile.size)}
           </div>
         </div>
       )}
@@ -217,15 +156,10 @@ export default function DocumentUpload() {
       <button
         type="button"
         onClick={handleUpload}
-        disabled={
-          !selectedFile ||
-          uploading
-        }
+        disabled={!selectedFile || uploading}
         className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {uploading
-          ? "Uploading..."
-          : "Upload"}
+        {uploading ? "Uploading..." : "Upload"}
       </button>
 
       {error && (
@@ -236,21 +170,19 @@ export default function DocumentUpload() {
 
       {result && (
         <div className="rounded-md border p-4 text-sm">
-          <div className="font-medium">
-            {result.message}
-          </div>
+          <div className="font-medium">✓ Document ready</div>
 
-          <div className="mt-2 text-muted-foreground">
-            {
-              result.data
-                .original_filename
-            }
-          </div>
+          <p className="mt-1 text-muted-foreground">
+            Your document has been added to the knowledge base and is ready for
+            questions.
+          </p>
 
-          <div className="text-muted-foreground">
-            {formatFileSize(
-              result.data.size_bytes,
-            )}
+          <div className="mt-3 rounded-md bg-muted p-3">
+            <div className="font-medium">{result.data.original_filename}</div>
+
+            <div className="text-muted-foreground">
+              {formatFileSize(result.data.size_bytes)}
+            </div>
           </div>
         </div>
       )}
