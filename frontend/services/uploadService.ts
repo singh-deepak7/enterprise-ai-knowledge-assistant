@@ -4,6 +4,15 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8000/api/v1";
 
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+}
+
 export async function uploadDocument(
   file: File,
 ): Promise<UploadResponse> {
@@ -23,12 +32,11 @@ export async function uploadDocument(
     let message = "Document upload failed.";
 
     try {
-      const error = (await response.json()) as {
-        detail?: string;
-        message?: string;
-      };
+      const error =
+        (await response.json()) as ApiErrorResponse;
 
       message =
+        error.error?.message ??
         error.detail ??
         error.message ??
         message;
