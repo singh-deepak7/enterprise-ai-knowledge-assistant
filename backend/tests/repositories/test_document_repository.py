@@ -14,6 +14,7 @@ def build_record(
         file_path="/tmp/stored-policy.pdf",
         content_type="application/pdf",
         size_bytes=1024,
+        content_hash="test-hash",
     )
 
 
@@ -78,3 +79,41 @@ def test_delete_unknown_document(tmp_path,) -> None:
     assert repository.delete(
         "missing"
     ) is None
+
+def test_get_by_content_hash(
+    tmp_path,
+) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
+
+    record = DocumentRecord(
+        document_id="doc-123",
+        original_filename="policy.pdf",
+        stored_filename="stored-policy.pdf",
+        file_path="/tmp/stored-policy.pdf",
+        content_type="application/pdf",
+        size_bytes=1024,
+        content_hash="sha256-test-hash",
+    )
+
+    repository.save(record)
+
+    result = repository.get_by_content_hash(
+        "sha256-test-hash"
+    )
+
+    assert result == record
+
+def test_get_by_content_hash_returns_none(
+    tmp_path,
+) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
+
+    result = repository.get_by_content_hash(
+        "missing-hash"
+    )
+
+    assert result is None

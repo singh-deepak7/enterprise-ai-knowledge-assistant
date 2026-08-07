@@ -9,8 +9,11 @@ from app.repositories.document_repository import (
 from app.schemas.storage import StorageResult
 from app.services.storage_service import StorageService
 from app.services.validation_service import ValidationService
+from app.core.exceptions import DuplicateDocumentException
 
 from pathlib import Path
+import hashlib
+
 
 from app.ai.vectorstores.vector_store_service import VectorStoreService
 
@@ -50,6 +53,28 @@ class DocumentService:
 
         result = await self.storage_service.save(file)
 
+        content_hash = self._calculate_content_hash(result.file_path)
+
+        existing_document = (
+            self.document_repository.get_by_content_hash(
+                content_hash
+            )
+        )
+
+        if existing_document is not None:
+            logger.warning(
+                "Duplicate document detected: %s matches document %s.",
+                result.original_filename,
+                existing_document.document_id,
+            )
+
+            stored_file = Path(result.file_path)
+
+            if stored_file.exists():
+                stored_file.unlink()
+
+            raise DuplicateDocumentException()
+
         logger.info(
             "Stored document '%s'. Starting indexing.",
             result.original_filename,
@@ -75,6 +100,7 @@ class DocumentService:
                 file_path=result.file_path,
                 content_type=result.content_type,
                 size_bytes=result.size_bytes,
+                content_hash=content_hash,
             )
         )
 
@@ -149,3 +175,22 @@ class DocumentService:
         )
 
         return True
+
+    @staticmethod
+    def _calculate_content_hash(
+        file_path: str,
+    ) -> str:
+        """
+        Calculate the SHA-256 hash of a stored document.
+        """
+
+        sha256 = hashlib.sha256()
+
+        with Path(file_path).open("rb") as file:
+            for block in iter(
+                lambda: file.read(8192),
+                b"",
+            ):
+                sha256.update(block)
+
+        return sha256.hexdigest()

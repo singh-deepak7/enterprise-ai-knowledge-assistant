@@ -27,6 +27,7 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
 
 
+
 async def unhandled_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
@@ -72,4 +73,13 @@ class EmptyFileException(AppException):
             message="Uploaded file is empty.",
             status_code=400,
             error_code="EMPTY_FILE",
+        )
+
+
+class DuplicateDocumentException(AppException):
+    def __init__(self):
+        super().__init__(
+            message="Document has already been uploaded.",
+            status_code=409,
+            error_code="DUPLICATE_DOCUMENT",
         )
