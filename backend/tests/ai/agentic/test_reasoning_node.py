@@ -7,8 +7,24 @@ from langchain_core.documents import Document
 
 from app.ai.agentic.graph_state import GraphState
 from app.ai.agentic.nodes.reasoning_node import reasoning_node
-from app.ai.llm.llm_service import LLMService
+from app.ai.llm.llm_service import (
+    LLMResponse,
+    LLMService,
+)
 from app.ai.llm.prompt_builder import PromptBuilder
+
+
+def _mock_llm_response(answer: str = "ANSWER") -> LLMResponse:
+    return LLMResponse(
+        answer=answer,
+        provider="OpenAI",
+        model="gpt-4.1-mini",
+        prompt_tokens=120,
+        completion_tokens=35,
+        total_tokens=155,
+        finish_reason="stop",
+        latency_ms=215.7,
+    )
 
 
 def test_reasoning_node_success() -> None:
@@ -31,7 +47,7 @@ def test_reasoning_node_success() -> None:
     prompt_builder.build_prompt.return_value = "PROMPT"
 
     llm_service = Mock(spec=LLMService)
-    llm_service.generate.return_value = (
+    llm_service.generate.return_value = _mock_llm_response(
         "Comprehensive coverage protects against theft."
     )
 
@@ -74,6 +90,14 @@ def test_reasoning_node_success() -> None:
         "Comprehensive coverage protects against theft."
     )
 
+    assert metadata["provider"] == "OpenAI"
+    assert metadata["model"] == "gpt-4.1-mini"
+    assert metadata["prompt_tokens"] == 120
+    assert metadata["completion_tokens"] == 35
+    assert metadata["total_tokens"] == 155
+    assert metadata["finish_reason"] == "stop"
+    assert metadata["llm_latency_ms"] == 215.7
+
 
 def test_reasoning_node_preserves_retrieved_chunks() -> None:
     """
@@ -91,7 +115,7 @@ def test_reasoning_node_preserves_retrieved_chunks() -> None:
     prompt_builder.build_prompt.return_value = "PROMPT"
 
     llm_service = Mock(spec=LLMService)
-    llm_service.generate.return_value = "ANSWER"
+    llm_service.generate.return_value = _mock_llm_response()
 
     state = GraphState(
         question="Coverage?",
@@ -116,7 +140,7 @@ def test_reasoning_node_preserves_existing_metadata() -> None:
     prompt_builder.build_prompt.return_value = "PROMPT"
 
     llm_service = Mock(spec=LLMService)
-    llm_service.generate.return_value = "ANSWER"
+    llm_service.generate.return_value = _mock_llm_response()
 
     state = GraphState(
         question="Coverage",
@@ -203,7 +227,7 @@ def test_reasoning_node_preserves_question() -> None:
     prompt_builder.build_prompt.return_value = "PROMPT"
 
     llm_service = Mock(spec=LLMService)
-    llm_service.generate.return_value = "ANSWER"
+    llm_service.generate.return_value = _mock_llm_response()
 
     state = GraphState(
         question="What is liability insurance?",

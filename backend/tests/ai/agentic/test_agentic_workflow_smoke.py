@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from langchain_core.documents import Document
 
 from app.ai.agentic.workflow import AgenticWorkflow
+from app.ai.llm.llm_service import LLMResponse
 
 
 def test_agentic_workflow_smoke() -> None:
@@ -37,7 +38,7 @@ def test_agentic_workflow_smoke() -> None:
 
     llm_service = Mock()
 
-    llm_service.generate.return_value = (
+    llm_service.generate.return_value = mock_llm_response(
         "Comprehensive coverage pays for damage "
         "caused by theft, fire and hail."
     )
@@ -91,3 +92,15 @@ def test_agentic_workflow_smoke() -> None:
     llm_service.generate.assert_called_once()
 
     source_attribution.build_sources.assert_called_once()
+
+def mock_llm_response(answer: str) -> LLMResponse:
+    return LLMResponse(
+        answer=answer,
+        provider="OpenAI",
+        model="gpt-4.1-mini",
+        prompt_tokens=125,
+        completion_tokens=28,
+        total_tokens=153,
+        finish_reason="stop",
+        latency_ms=187.45,
+    )

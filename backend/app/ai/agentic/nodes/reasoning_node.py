@@ -11,7 +11,7 @@ import logging
 import time
 
 from app.ai.agentic.graph_state import GraphState
-from app.ai.llm.llm_service import LLMService
+from app.ai.llm.llm_service import LLMResponse, LLMService
 from app.ai.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
@@ -59,11 +59,11 @@ def reasoning_node(
 
         logger.debug("Prompt successfully built.")
 
-        answer = llm_service.generate(
+        llm_response: LLMResponse = llm_service.generate(
             prompt=prompt,
         )
 
-        state.answer = answer
+        state.answer = llm_response.answer
 
         elapsed_ms = round(
             (time.perf_counter() - start) * 1000,
@@ -73,10 +73,25 @@ def reasoning_node(
         state.metadata["reasoning"] = {
             "duration_ms": elapsed_ms,
             "prompt_length": len(prompt),
-            "answer_length": len(answer),
+            "answer_length": len(llm_response.answer),
+            "provider": llm_response.provider,
+            "model": llm_response.model,
+            "prompt_tokens": llm_response.prompt_tokens,
+            "completion_tokens": llm_response.completion_tokens,
+            "total_tokens": llm_response.total_tokens,
+            "finish_reason": llm_response.finish_reason,
+            "llm_latency_ms": llm_response.latency_ms,
         }
 
-        logger.info("Reasoning node completed.")
+        logger.info(
+            (
+                "Reasoning completed "
+                "(model=%s total_tokens=%d latency=%.2fms)"
+            ),
+            llm_response.model,
+            llm_response.total_tokens,
+            llm_response.latency_ms,
+        )
 
         return state
 
