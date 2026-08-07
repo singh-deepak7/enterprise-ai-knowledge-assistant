@@ -1,3 +1,4 @@
+import json
 import logging
 
 from fastapi import (
@@ -6,6 +7,7 @@ from fastapi import (
     HTTPException,
     status,
 )
+from fastapi.responses import StreamingResponse
 
 from app.ai.agentic.workflow import AgenticWorkflow
 from app.dependencies import get_agentic_workflow
@@ -58,3 +60,52 @@ def chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(ex),
         ) from ex
+
+
+@router.post(
+    "/stream",
+    status_code=status.HTTP_200_OK,
+)
+def chat_stream(
+    request: ChatRequest,
+    workflow: AgenticWorkflow = Depends(
+        get_agentic_workflow,
+    ),
+) -> StreamingResponse:
+    """
+    Stream workflow events using Server Sent Events.
+    """
+
+    logger.info("Received streaming chat request.")
+
+    def event_generator():
+        try:
+            for event in workflow.stream(
+                question=request.question,
+            ):
+                yield (
+                    "data: "
+                    + json.dumps(event, default=str)
+                    + "\n\n"
+                )
+
+            yield "event: done\ndata: {}\n\n"
+
+        except Exception as ex:
+            logger.exception(
+                "Streaming chat request failed."
+            )
+
+            yield (
+                "event: error\n"
+                "data: "
+                + json.dumps(
+                    {"detail": str(ex)}
+                )
+                + "\n\n"
+            )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+    )
