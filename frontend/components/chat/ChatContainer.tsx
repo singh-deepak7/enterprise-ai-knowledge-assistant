@@ -2,17 +2,22 @@
 
 import { useState } from "react";
 
-import { streamChat } from "@/services/chatStreamService";
+import {
+  streamChat,
+  type ChatStreamEvent,
+} from "@/services/chatStreamService";
 import type { ChatMessage } from "@/types/message";
 
 import ChatMessages from "./ChatMessages";
 
-function getWorkflowStatus(event: unknown): string | null {
-  if (typeof event !== "object" || event === null) {
+function getWorkflowStatus(
+  event: ChatStreamEvent,
+): string | null {
+  if (event.type !== "updates") {
     return null;
   }
 
-  const node = Object.keys(event)[0];
+  const node = Object.keys(event.data)[0];
 
   switch (node) {
     case "planner":
@@ -30,6 +35,25 @@ function getWorkflowStatus(event: unknown): string | null {
     default:
       return null;
   }
+}
+
+function getWorkflowValue(
+  event: ChatStreamEvent,
+): Record<string, unknown> | null {
+  if (event.type !== "updates") {
+    return null;
+  }
+
+  const value = Object.values(event.data)[0];
+
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
 }
 
 export default function ChatContainer() {
@@ -80,6 +104,39 @@ export default function ChatContainer() {
           question: submittedQuestion,
         },
         (event) => {
+          /*
+           * Token events are emitted while the LLM is
+           * generating the answer.
+           *
+           * Append each token/chunk to the existing
+           * assistant placeholder message.
+           */
+          if (event.type === "token") {
+            const content = event.data.content;
+
+            if (!content) {
+              return;
+            }
+
+            setMessages((previous) =>
+              previous.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      content:
+                        message.content + content,
+                    }
+                  : message,
+              ),
+            );
+
+            return;
+          }
+
+          /*
+           * Workflow updates are emitted when LangGraph
+           * nodes complete.
+           */
           const status = getWorkflowStatus(event);
 
           if (status) {
@@ -87,63 +144,52 @@ export default function ChatContainer() {
               ...previous,
               status,
             ]);
-
-            setMessages((previous) =>
-              previous.map((message) =>
-                message.id === assistantMessageId
-                  ? {
-                      ...message,
-                      status,
-                    }
-                  : message,
-              ),
-            );
           }
 
-          if (
-            typeof event !== "object" ||
-            event === null
-          ) {
+          const value = getWorkflowValue(event);
+
+          if (!value) {
             return;
           }
 
-          const value = Object.values(event)[0];
-
-          if (
-            typeof value !== "object" ||
-            value === null
-          ) {
-            return;
-          }
-
+          /*
+           * The reasoning update contains the complete
+           * answer. Do not append it because the answer
+           * has already been assembled from token events.
+           *
+           * We use it only as a fallback in case token
+           * streaming produced no content.
+           */
           setMessages((previous) =>
             previous.map((message) => {
               if (message.id !== assistantMessageId) {
                 return message;
               }
 
+              const completeAnswer =
+                typeof value.answer === "string"
+                  ? value.answer
+                  : "";
+
+              const confidenceScore =
+                typeof value.confidence_score === "number"
+                  ? value.confidence_score
+                  : message.confidenceScore;
+
+              const sources = Array.isArray(value.sources)
+                ? value.sources
+                : message.sources;
+
               return {
                 ...message,
 
                 content:
-                  "answer" in value &&
-                  typeof value.answer === "string" &&
-                  value.answer.length > 0
-                    ? value.answer
-                    : message.content,
+                  message.content ||
+                  completeAnswer,
 
-                confidenceScore:
-                  "confidence_score" in value &&
-                  typeof value.confidence_score === "number"
-                    ? value.confidence_score
-                    : message.confidenceScore,
+                confidenceScore,
 
-                sources:
-                  "sources" in value &&
-                  Array.isArray(value.sources) &&
-                  value.sources.length > 0
-                    ? value.sources
-                    : message.sources,
+                sources,
               };
             }),
           );
@@ -163,25 +209,14 @@ export default function ChatContainer() {
             ? {
                 ...message,
                 content:
+                  message.content ||
                   "Unable to generate a response. Please try again.",
-                status: undefined,
               }
             : message,
         ),
       );
     } finally {
       setLoading(false);
-
-      setMessages((previous) =>
-        previous.map((message) =>
-          message.id === assistantMessageId
-            ? {
-                ...message,
-                status: undefined,
-              }
-            : message,
-        ),
-      );
     }
   }
 
@@ -245,9 +280,8 @@ export default function ChatContainer() {
           </button>
         </div>
       </div>
+
+      <pre>{JSON.stringify(messages, null, 2)}</pre>
     </section>
   );
 }
-
-      
-
