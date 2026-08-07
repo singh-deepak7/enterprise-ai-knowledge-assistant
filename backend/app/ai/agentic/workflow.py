@@ -168,6 +168,44 @@ class AgenticWorkflow:
 
             raise
 
+    def stream(
+        self,
+        question: str,
+    ):
+        """
+        Stream LangGraph workflow events.
+
+        Used by the SSE chat endpoint.
+        """
+
+        session_id = "default"
+        request_id = str(uuid.uuid4())
+
+        logger.info(
+            "Starting streaming workflow [request_id=%s]",
+            request_id,
+        )
+
+        history = self._conversation_memory.get_history(
+            session_id,
+        )
+
+        initial_state = GraphState(
+            question=question,
+            request_id=request_id,
+            conversation_history=history,
+        )
+
+        self._conversation_memory.add_user_message(
+            session_id=session_id,
+            message=question,
+        )
+
+        return self._graph.stream(
+            initial_state,
+            stream_mode="updates",
+        )
+
     def _planner(
         self,
         state: GraphState,
