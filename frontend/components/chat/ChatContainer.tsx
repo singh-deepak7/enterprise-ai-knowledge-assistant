@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 
+import { useChatSession } from "@/hooks/useChatSession";
 import {
   streamChat,
   type ChatStreamEvent,
@@ -58,22 +59,23 @@ function getWorkflowValue(
 
 export default function ChatContainer() {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sessionIdRef = useRef<string>(
-    crypto.randomUUID(),
-  );
+  const {
+    sessionId,
+    messages,
+    setMessages,
+    ensureSessionId,
+    startNewChat,
+  } = useChatSession();
 
   function handleNewChat() {
     if (loading) {
       return;
     }
 
-    sessionIdRef.current = crypto.randomUUID();
-
-    setMessages([]);
+    startNewChat();
     setQuestion("");
     setError(null);
   }
@@ -81,11 +83,18 @@ export default function ChatContainer() {
   async function handleSubmit() {
     const submittedQuestion = question.trim();
 
-    if (!submittedQuestion || loading) {
+    if (
+      !submittedQuestion ||
+      loading
+    ) {
       return;
     }
 
-    const assistantMessageId = crypto.randomUUID();
+    const sessionId =
+    ensureSessionId();
+
+    const assistantMessageId =
+      crypto.randomUUID();
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -116,11 +125,12 @@ export default function ChatContainer() {
       await streamChat(
         {
           question: submittedQuestion,
-          session_id: sessionIdRef.current,
+          session_id: sessionId,
         },
         (event) => {
           if (event.type === "token") {
-            const content = event.data.content;
+            const content =
+              event.data.content;
 
             if (!content) {
               return;
@@ -128,11 +138,13 @@ export default function ChatContainer() {
 
             setMessages((previous) =>
               previous.map((message) =>
-                message.id === assistantMessageId
+                message.id ===
+                assistantMessageId
                   ? {
                       ...message,
                       content:
-                        message.content + content,
+                        message.content +
+                        content,
                       status: undefined,
                     }
                   : message,
@@ -142,12 +154,14 @@ export default function ChatContainer() {
             return;
           }
 
-          const status = getWorkflowStatus(event);
+          const status =
+            getWorkflowStatus(event);
 
           if (status) {
             setMessages((previous) =>
               previous.map((message) =>
-                message.id === assistantMessageId
+                message.id ===
+                assistantMessageId
                   ? {
                       ...message,
                       status,
@@ -157,7 +171,8 @@ export default function ChatContainer() {
             );
           }
 
-          const value = getWorkflowValue(event);
+          const value =
+            getWorkflowValue(event);
 
           if (!value) {
             return;
@@ -165,23 +180,31 @@ export default function ChatContainer() {
 
           setMessages((previous) =>
             previous.map((message) => {
-              if (message.id !== assistantMessageId) {
+              if (
+                message.id !==
+                assistantMessageId
+              ) {
                 return message;
               }
 
               const completeAnswer =
-                typeof value.answer === "string"
+                typeof value.answer ===
+                "string"
                   ? value.answer
                   : "";
 
               const confidenceScore =
-                typeof value.confidence_score === "number"
+                typeof value.confidence_score ===
+                "number"
                   ? value.confidence_score
                   : message.confidenceScore;
 
-              const sources = Array.isArray(value.sources)
-                ? value.sources
-                : message.sources;
+              const sources =
+                Array.isArray(
+                  value.sources,
+                )
+                  ? value.sources
+                  : message.sources;
 
               return {
                 ...message,
@@ -205,7 +228,8 @@ export default function ChatContainer() {
 
       setMessages((previous) =>
         previous.map((message) =>
-          message.id === assistantMessageId
+          message.id ===
+          assistantMessageId
             ? {
                 ...message,
                 content:
@@ -221,7 +245,8 @@ export default function ChatContainer() {
 
       setMessages((previous) =>
         previous.map((message) =>
-          message.id === assistantMessageId
+          message.id ===
+          assistantMessageId
             ? {
                 ...message,
                 status: undefined,
@@ -256,7 +281,9 @@ export default function ChatContainer() {
       </div>
 
       <div className="min-h-0 flex-1 p-6">
-        <ChatMessages messages={messages} />
+        <ChatMessages
+          messages={messages}
+        />
       </div>
 
       {error && (
@@ -275,17 +302,24 @@ export default function ChatContainer() {
             value={question}
             disabled={loading}
             onChange={(event) =>
-              setQuestion(event.target.value)
+              setQuestion(
+                event.target.value,
+              )
             }
           />
 
           <button
             type="button"
             className="self-end rounded-md bg-primary px-5 py-3 text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={loading || !question.trim()}
+            disabled={
+              loading ||
+              !question.trim()
+            }
             onClick={handleSubmit}
           >
-            {loading ? "Generating..." : "Ask"}
+            {loading
+              ? "Generating..."
+              : "Ask"}
           </button>
         </div>
       </div>
