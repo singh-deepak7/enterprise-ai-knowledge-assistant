@@ -76,7 +76,7 @@ export default function ChatMessage({
         {!isUser &&
           message.confidenceScore !== undefined && (
             <div className="mt-3 text-sm opacity-80">
-              Confidence:{" "}
+              Evidence Confidence:{" "}
               {(message.confidenceScore * 100).toFixed(0)}%
             </div>
           )}
