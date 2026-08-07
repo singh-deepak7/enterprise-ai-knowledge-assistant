@@ -372,3 +372,71 @@ def test_workflow_records_session_id() -> None:
         state.metadata["workflow"]["session_id"]
         == TEST_SESSION_ID
     )
+
+def test_route_after_retrieval_with_context() -> None:
+    """
+    Workflow should continue to reasoning when
+    retrieval returns relevant document chunks.
+    """
+
+    workflow = build_workflow()
+
+    state = GraphState(
+        question="What is comprehensive coverage?",
+        retrieved_chunks=[
+            Mock(),
+        ],
+    )
+
+    assert (
+        workflow._route_after_retrieval(state)
+        == "reasoning"
+    )
+
+
+def test_route_after_retrieval_without_context() -> None:
+    """
+    Workflow should skip reasoning when retrieval
+    returns no relevant document chunks.
+    """
+
+    workflow = build_workflow()
+
+    state = GraphState(
+        question="What is leave policy?",
+        retrieved_chunks=[],
+    )
+
+    assert (
+        workflow._route_after_retrieval(state)
+        == "no_context"
+    )
+
+def test_no_context_sets_safe_fallback_answer() -> None:
+    """
+    No-context node should return the safe fallback
+    without invoking the LLM.
+    """
+
+    workflow = build_workflow()
+
+    state = GraphState(
+        question="What is leave policy?",
+    )
+
+    result = workflow._no_context(state)
+
+    assert (
+        result.answer
+        == "I couldn't find that information in the provided documents."
+    )
+
+    assert (
+        result.metadata["reasoning"]["skipped"]
+        is True
+    )
+
+    assert (
+        result.metadata["reasoning"]["reason"]
+        == "no_relevant_context"
+    )

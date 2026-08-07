@@ -27,6 +27,10 @@ from app.ai.retrieval.source_attribution import SourceAttribution
 
 logger = logging.getLogger(__name__)
 
+NO_CONTEXT_ANSWER = (
+    "I couldn't find that information in the provided documents."
+)
+
 
 class AgenticWorkflow:
     """
@@ -468,6 +472,11 @@ class AgenticWorkflow:
         )
 
         builder.add_node(
+            "no_context",
+            self._no_context,
+        )
+
+        builder.add_node(
             "reasoning",
             self._reasoning,
         )
@@ -491,9 +500,18 @@ class AgenticWorkflow:
             },
         )
 
-        builder.add_edge(
+        builder.add_conditional_edges(
             "retrieval",
-            "reasoning",
+            self._route_after_retrieval,
+            {
+                "reasoning": "reasoning",
+                "no_context": "no_context",
+            },
+        )
+
+        builder.add_edge(
+            "no_context",
+            "validation",
         )
 
         builder.add_edge(
@@ -511,3 +529,56 @@ class AgenticWorkflow:
         )
 
         return builder.compile()
+
+
+    def _no_context(
+        self,
+        state: GraphState,
+    ) -> GraphState:
+        """
+        Build a safe response when retrieval finds no
+        sufficiently relevant document chunks.
+        """
+
+        logger.info(
+            "No relevant context found; skipping LLM reasoning."
+        )
+
+        state.answer = NO_CONTEXT_ANSWER
+
+        state.metadata.setdefault(
+            "reasoning",
+            {},
+        )
+
+        state.metadata["reasoning"].update(
+            {
+                "skipped": True,
+                "reason": "no_relevant_context",
+            }
+        )
+
+        return state
+
+
+    def _route_after_retrieval(
+        self,
+        state: GraphState,
+    ) -> str:
+        """
+        Route based on whether retrieval found relevant context.
+        """
+
+        has_context = bool(
+            state.retrieved_chunks
+        )
+
+        logger.debug(
+            "Retrieval routing decision: has_context=%s",
+            has_context,
+        )
+
+        if has_context:
+            return "reasoning"
+
+        return "no_context"
