@@ -12,6 +12,13 @@ class ChatRequest(BaseModel):
         description="User question.",
     )
 
+    session_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=128,
+        description="Conversation session identifier.",
+    )
+
     top_k: int = Field(
         default=5,
         ge=1,

@@ -35,15 +35,17 @@ def test_chat_success() -> None:
         get_agentic_workflow
     ] = lambda: workflow
 
-    response = client.post(
-        "/api/v1/chat",
-        json={
-            "question": "Vacation policy?",
-            "top_k": 5,
-        },
-    )
-
-    app.dependency_overrides.clear()
+    try:
+        response = client.post(
+            "/api/v1/chat",
+            json={
+                "question": "Vacation policy?",
+                "session_id": "test-session",
+                "top_k": 5,
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
 
     assert response.status_code == 200
 
@@ -59,6 +61,7 @@ def test_chat_success() -> None:
     workflow.invoke.assert_called_once_with(
         question="Vacation policy?",
     )
+
 
 def test_chat_failure() -> None:
     """
@@ -80,6 +83,7 @@ def test_chat_failure() -> None:
             "/api/v1/chat",
             json={
                 "question": "Hello",
+                "session_id": "test-session",
             },
         )
     finally:
@@ -90,3 +94,18 @@ def test_chat_failure() -> None:
     assert response.json() == {
         "detail": "Failure",
     }
+
+
+def test_chat_requires_session_id() -> None:
+    """
+    Chat endpoint should reject requests without a session ID.
+    """
+
+    response = client.post(
+        "/api/v1/chat",
+        json={
+            "question": "Hello",
+        },
+    )
+
+    assert response.status_code == 422
