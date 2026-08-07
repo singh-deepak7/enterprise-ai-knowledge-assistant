@@ -1,5 +1,7 @@
 from fastapi import APIRouter, status
 
+from app.schemas.document import DocumentListResponse
+
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"],
@@ -8,16 +10,14 @@ router = APIRouter(
 
 @router.get(
     "",
+    response_model=DocumentListResponse,
     status_code=status.HTTP_200_OK,
 )
-def list_documents() -> dict[str, list[dict[str, object]]]:
+def list_documents() -> DocumentListResponse:
     """
     Return indexed documents.
-
-    This is a temporary empty response while the document
-    repository/service layer is introduced in the next step.
     """
 
-    return {
-        "documents": [],
-    }
+    return DocumentListResponse(
+        documents=[],
+    )
