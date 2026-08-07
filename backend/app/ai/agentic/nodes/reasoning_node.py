@@ -52,6 +52,7 @@ def reasoning_node(
         prompt = prompt_builder.build_prompt(
             question=state.question,
             documents=state.retrieved_chunks,
+            conversation_history=state.conversation_history,
         )
 
         state.prompt = prompt

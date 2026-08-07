@@ -49,6 +49,7 @@ def test_reasoning_node_success() -> None:
     prompt_builder.build_prompt.assert_called_once_with(
         question="What is comprehensive coverage?",
         documents=documents,
+        conversation_history=[],
     )
 
     llm_service.generate.assert_called_once_with(

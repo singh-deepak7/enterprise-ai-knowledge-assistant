@@ -126,3 +126,41 @@ def test_workflow_invokes_graph():
     workflow.invoke("Coverage?")
 
     workflow._graph.invoke.assert_called_once()
+
+def test_workflow_uses_conversation_memory():
+    retrieval = Mock(spec=RetrievalService)
+    prompt_builder = Mock(spec=PromptBuilder)
+    llm = Mock(spec=LLMService)
+    attribution = Mock(spec=SourceAttribution)
+    memory = Mock(spec=ConversationMemory)
+
+    memory.get_history.return_value = []
+
+    workflow = AgenticWorkflow(
+        retrieval_service=retrieval,
+        prompt_builder=prompt_builder,
+        llm_service=llm,
+        source_attribution=attribution,
+        conversation_memory=memory,
+    )
+
+    workflow._graph = Mock()
+
+    workflow._graph.invoke.return_value = GraphState(
+        question="Coverage?",
+        answer="Answer",
+    )
+
+    workflow.invoke("Coverage?")
+
+    memory.get_history.assert_called_once_with("default")
+
+    memory.add_user_message.assert_called_once_with(
+        session_id="default",
+        message="Coverage?",
+    )
+
+    memory.add_assistant_message.assert_called_once_with(
+        session_id="default",
+        message="Answer",
+    )

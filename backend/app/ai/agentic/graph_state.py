@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 
 from langchain_core.documents import Document
 
+from app.ai.memory.conversation_memory import ConversationTurn
+
 
 @dataclass(slots=True)
 class GraphState:
@@ -66,3 +68,11 @@ class GraphState:
     sources: list[dict[str, object]] = field(default_factory=list)
 
     metadata: dict[str, object] = field(default_factory=dict)
+
+    # ==========================================================
+    # Conversational History
+    # ==========================================================
+
+    conversation_history: list[ConversationTurn] = field(
+        default_factory=list
+    )

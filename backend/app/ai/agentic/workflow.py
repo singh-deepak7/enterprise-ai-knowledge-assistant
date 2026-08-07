@@ -52,14 +52,14 @@ class AgenticWorkflow:
             source_attribution or SourceAttribution()
         )
         self._conversation_memory = (
-        conversation_memory or ConversationMemory()
+            conversation_memory or ConversationMemory()
         )
 
         self._graph = self._build_graph()
 
     def invoke(
-    self,
-    question: str,
+        self,
+        question: str,
     ) -> GraphState:
         """
         Execute the complete agentic workflow.
@@ -69,12 +69,19 @@ class AgenticWorkflow:
             "Starting agentic workflow."
         )
 
-        initial_state = GraphState(
-            question=question,
-        )
-
         session_id = "default"
 
+        history = self._conversation_memory.get_history(
+            session_id
+        )
+
+        initial_state = GraphState(
+            question=question,
+            conversation_history=history,
+        )
+
+        # Store the current user message after loading history so it
+        # isn't duplicated in the prompt for this turn.
         self._conversation_memory.add_user_message(
             session_id=session_id,
             message=question,
@@ -88,21 +95,15 @@ class AgenticWorkflow:
             "Agentic workflow completed."
         )
 
-        if isinstance(result, GraphState):
-            self._conversation_memory.add_assistant_message(
-                session_id=session_id,
-                message=result.answer,
-            )
-            return result
-
-        result_state = GraphState(**result)
+        if not isinstance(result, GraphState):
+            result = GraphState(**result)
 
         self._conversation_memory.add_assistant_message(
             session_id=session_id,
-            message=result_state.answer,
+            message=result.answer,
         )
 
-        return result_state
+        return result
 
     def _planner(
         self,
