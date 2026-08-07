@@ -263,3 +263,31 @@ def test_workflow_records_status() -> None:
         state.metadata["workflow"]["duration_ms"]
         >= 0
     )
+
+def test_workflow_records_success_status() -> None:
+    """
+    Workflow should record success metadata.
+    """
+
+    workflow = AgenticWorkflow(
+        retrieval_service=Mock(),
+        prompt_builder=Mock(),
+        llm_service=Mock(),
+        source_attribution=Mock(),
+        conversation_memory=Mock(),
+    )
+
+    workflow._conversation_memory.get_history.return_value = []
+
+    workflow._graph = Mock()
+
+    workflow._graph.invoke.return_value = GraphState(
+        question="Coverage",
+        answer="Answer",
+    )
+
+    state = workflow.invoke("Coverage")
+
+    assert state.metadata["workflow"]["status"] == "success"
+    assert state.metadata["workflow"]["duration_ms"] >= 0
+    assert "request_id" in state.metadata["workflow"]

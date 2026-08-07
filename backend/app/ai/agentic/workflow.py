@@ -72,7 +72,6 @@ class AgenticWorkflow:
         workflow_start = time.perf_counter()
 
         session_id = "default"
-
         request_id = str(uuid.uuid4())
 
         logger.info(
@@ -90,51 +89,84 @@ class AgenticWorkflow:
             conversation_history=history,
         )
 
-        # Store the current user message after loading history so
-        # it does not appear twice in the current prompt.
+        # Store current user message after loading history so
+        # it isn't duplicated in the current prompt.
         self._conversation_memory.add_user_message(
             session_id=session_id,
             message=question,
         )
 
-        result = self._graph.invoke(
-            initial_state,
-        )
+        try:
+            result = self._graph.invoke(
+                initial_state,
+            )
 
-        if not isinstance(result, GraphState):
-            result = GraphState(**result)
+            if not isinstance(result, GraphState):
+                result = GraphState(**result)
 
-        workflow_duration_ms = round(
-            (time.perf_counter() - workflow_start) * 1000,
-            2,
-        )
+            workflow_duration_ms = round(
+                (time.perf_counter() - workflow_start) * 1000,
+                2,
+            )
 
-        result.metadata.setdefault(
-            "workflow",
-            {},
-        )
+            result.metadata.setdefault(
+                "workflow",
+                {},
+            )
 
-        result.metadata["workflow"].update(
-            {
-                "request_id": request_id,
-                "status": "success",
-                "duration_ms": workflow_duration_ms,
-            }
-        )
+            result.metadata["workflow"].update(
+                {
+                    "request_id": request_id,
+                    "status": "success",
+                    "duration_ms": workflow_duration_ms,
+                }
+            )
 
-        self._conversation_memory.add_assistant_message(
-            session_id=session_id,
-            message=result.answer,
-        )
+            self._conversation_memory.add_assistant_message(
+                session_id=session_id,
+                message=result.answer,
+            )
 
-        logger.info(
-            "Agentic workflow completed "
-            "[request_id=%s duration=%.2fms]",
-            request_id,
-            workflow_duration_ms,
-        )
+            logger.info(
+                "Agentic workflow completed "
+                "[request_id=%s duration=%.2fms]",
+                request_id,
+                workflow_duration_ms,
+            )
 
-        return result
+            return result
+
+        except Exception as ex:
+            workflow_duration_ms = round(
+                (time.perf_counter() - workflow_start) * 1000,
+                2,
+            )
+
+            logger.exception(
+                "Agentic workflow failed "
+                "[request_id=%s duration=%.2fms error=%s]",
+                request_id,
+                workflow_duration_ms,
+                type(ex).__name__,
+            )
+
+            # Preserve failure metadata for future observability.
+            initial_state.metadata.setdefault(
+                "workflow",
+                {},
+            )
+
+            initial_state.metadata["workflow"].update(
+                {
+                    "request_id": request_id,
+                    "status": "failed",
+                    "duration_ms": workflow_duration_ms,
+                    "error_type": type(ex).__name__,
+                    "error_message": str(ex),
+                }
+            )
+
+            raise
 
     def _planner(
         self,
