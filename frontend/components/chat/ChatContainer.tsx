@@ -245,8 +245,6 @@ export default function ChatContainer() {
           </button>
         </div>
       </div>
-
-      <pre>{JSON.stringify(messages, null, 2)}</pre>
     </section>
   );
 }

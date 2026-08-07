@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from langchain_core.messages import HumanMessage
@@ -52,24 +53,22 @@ class LLMService:
         self,
         llm: ChatOpenAI | None = None,
     ) -> None:
-
         self._llm = llm or ChatOpenAI(
             model=settings.CHAT_MODEL,
             api_key=settings.OPENAI_API_KEY,
             temperature=0,
-    )
+        )
 
     def generate(
         self,
         prompt: str,
     ) -> LLMResponse:
         """
-        Generate a response from the language model with automatic
-        retry for transient failures.
+        Generate a complete response from the language model with
+        automatic retry for transient failures.
         """
 
         start = time.perf_counter()
-
         retry_count = 0
 
         while True:
@@ -174,3 +173,51 @@ class LLMService:
                 )
 
                 time.sleep(backoff)
+
+    def stream(
+        self,
+        prompt: str,
+    ) -> Iterator[str]:
+        """
+        Stream text chunks from the language model.
+
+        Yields:
+            Individual text chunks as they are generated.
+        """
+
+        logger.info(
+            "Starting streaming LLM response."
+        )
+
+        start = time.perf_counter()
+
+        try:
+            for chunk in self._llm.stream(
+                [
+                    HumanMessage(content=prompt),
+                ]
+            ):
+                content = chunk.content
+
+                if isinstance(content, str) and content:
+                    yield content
+
+            latency_ms = round(
+                (time.perf_counter() - start) * 1000,
+                2,
+            )
+
+            logger.info(
+                (
+                    "Streaming LLM response completed "
+                    "(model=%s latency=%.2fms)"
+                ),
+                settings.CHAT_MODEL,
+                latency_ms,
+            )
+
+        except Exception:
+            logger.exception(
+                "Streaming LLM response failed."
+            )
+            raise
