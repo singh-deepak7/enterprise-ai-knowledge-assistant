@@ -1,9 +1,30 @@
 "use client";
 
+import type { ChatSource } from "@/types/chat";
 import type { ChatMessage as ChatMessageType } from "@/types/message";
 
 function getDisplayFileName(path: string): string {
   return path.split("/").pop() ?? path;
+}
+
+function deduplicateSources(
+  sources: ChatSource[] | undefined,
+): ChatSource[] {
+  if (!sources) {
+    return [];
+  }
+
+  const uniqueSources = new Map<string, ChatSource>();
+
+  for (const source of sources) {
+    const key = `${source.source}:${source.page}`;
+
+    if (!uniqueSources.has(key)) {
+      uniqueSources.set(key, source);
+    }
+  }
+
+  return Array.from(uniqueSources.values());
 }
 
 interface ChatMessageProps {
@@ -19,6 +40,10 @@ export default function ChatMessage({
     !isUser &&
     !message.content &&
     Boolean(message.status);
+
+  const sources = deduplicateSources(
+    message.sources,
+  );
 
   return (
     <div
@@ -56,31 +81,30 @@ export default function ChatMessage({
             </div>
           )}
 
-        {!isUser &&
-          message.sources &&
-          message.sources.length > 0 && (
-            <div className="mt-4">
-              <div className="mb-2 font-medium">
-                Sources
-              </div>
-
-              <div className="space-y-2 text-sm">
-                {message.sources.map(
-                  (source, index) => (
-                    <div key={index}>
-                      📄{" "}
-                      {getDisplayFileName(
-                        source.source,
-                      )}
-                      <div>
-                        Page {source.page}
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
+        {!isUser && sources.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 font-medium">
+              Sources
             </div>
-          )}
+
+            <div className="space-y-2 text-sm">
+              {sources.map((source) => (
+                <div
+                  key={`${source.source}:${source.page}`}
+                >
+                  📄{" "}
+                  {getDisplayFileName(
+                    source.source,
+                  )}
+
+                  <div>
+                    Page {source.page}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
