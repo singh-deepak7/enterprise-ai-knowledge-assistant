@@ -11,6 +11,13 @@ from dataclasses import dataclass
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError,
+    RateLimitError,
+)
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -30,6 +37,7 @@ class LLMResponse:
     total_tokens: int
     finish_reason: str | None
     latency_ms: float
+    retry_count: int
 
 
 class LLMService:
@@ -37,62 +45,132 @@ class LLMService:
     Service responsible for interacting with the language model.
     """
 
-    def __init__(self) -> None:
-        self._llm = ChatOpenAI(
+    MAX_RETRIES = 3
+    INITIAL_BACKOFF_SECONDS = 1
+
+    def __init__(
+        self,
+        llm: ChatOpenAI | None = None,
+    ) -> None:
+
+        self._llm = llm or ChatOpenAI(
             model=settings.CHAT_MODEL,
             api_key=settings.OPENAI_API_KEY,
             temperature=0,
-        )
+    )
 
     def generate(
         self,
         prompt: str,
     ) -> LLMResponse:
         """
-        Generate a response from the language model.
+        Generate a response from the language model with automatic
+        retry for transient failures.
         """
-
-        logger.info("Generating LLM response.")
 
         start = time.perf_counter()
 
-        response = self._llm.invoke(
-            [
-                HumanMessage(content=prompt),
-            ]
-        )
+        retry_count = 0
 
-        latency_ms = round(
-            (time.perf_counter() - start) * 1000,
-            2,
-        )
+        while True:
+            try:
+                logger.info(
+                    "Generating LLM response (attempt %d).",
+                    retry_count + 1,
+                )
 
-        usage = getattr(response, "usage_metadata", {}) or {}
-        metadata = getattr(response, "response_metadata", {}) or {}
+                response = self._llm.invoke(
+                    [
+                        HumanMessage(content=prompt),
+                    ]
+                )
 
-        prompt_tokens = usage.get("input_tokens", 0)
-        completion_tokens = usage.get("output_tokens", 0)
-        total_tokens = usage.get("total_tokens", 0)
+                latency_ms = round(
+                    (time.perf_counter() - start) * 1000,
+                    2,
+                )
 
-        finish_reason = metadata.get("finish_reason")
+                usage = (
+                    getattr(response, "usage_metadata", {})
+                    or {}
+                )
 
-        logger.info(
-            (
-                "LLM response generated "
-                "(model=%s latency=%.2fms total_tokens=%d)"
-            ),
-            settings.CHAT_MODEL,
-            latency_ms,
-            total_tokens,
-        )
+                metadata = (
+                    getattr(response, "response_metadata", {})
+                    or {}
+                )
 
-        return LLMResponse(
-            answer=response.content,
-            provider="OpenAI",
-            model=settings.CHAT_MODEL,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            finish_reason=finish_reason,
-            latency_ms=latency_ms,
-        )
+                prompt_tokens = usage.get(
+                    "input_tokens",
+                    0,
+                )
+
+                completion_tokens = usage.get(
+                    "output_tokens",
+                    0,
+                )
+
+                total_tokens = usage.get(
+                    "total_tokens",
+                    0,
+                )
+
+                finish_reason = metadata.get(
+                    "finish_reason"
+                )
+
+                logger.info(
+                    (
+                        "LLM response generated "
+                        "(model=%s latency=%.2fms "
+                        "tokens=%d retries=%d)"
+                    ),
+                    settings.CHAT_MODEL,
+                    latency_ms,
+                    total_tokens,
+                    retry_count,
+                )
+
+                return LLMResponse(
+                    answer=response.content,
+                    provider="OpenAI",
+                    model=settings.CHAT_MODEL,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    finish_reason=finish_reason,
+                    latency_ms=latency_ms,
+                    retry_count=retry_count,
+                )
+
+            except (
+                APIConnectionError,
+                APITimeoutError,
+                RateLimitError,
+                InternalServerError,
+            ):
+                retry_count += 1
+
+                if retry_count > self.MAX_RETRIES:
+                    logger.exception(
+                        "LLM failed after %d retries.",
+                        self.MAX_RETRIES,
+                    )
+                    raise
+
+                backoff = (
+                    self.INITIAL_BACKOFF_SECONDS
+                    * (2 ** (retry_count - 1))
+                )
+
+                logger.warning(
+                    (
+                        "Transient LLM failure. "
+                        "Retry %d/%d in %.1f second(s)."
+                    ),
+                    retry_count,
+                    self.MAX_RETRIES,
+                    backoff,
+                )
+
+                time.sleep(backoff)

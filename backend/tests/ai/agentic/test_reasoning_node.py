@@ -24,6 +24,7 @@ def _mock_llm_response(answer: str = "ANSWER") -> LLMResponse:
         total_tokens=155,
         finish_reason="stop",
         latency_ms=215.7,
+        retry_count=0,
     )
 
 

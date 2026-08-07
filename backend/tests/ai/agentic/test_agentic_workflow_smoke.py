@@ -103,4 +103,5 @@ def mock_llm_response(answer: str) -> LLMResponse:
         total_tokens=153,
         finish_reason="stop",
         latency_ms=187.45,
+        retry_count=0,
     )
