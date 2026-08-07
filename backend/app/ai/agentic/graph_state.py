@@ -26,6 +26,9 @@ class GraphState:
 
     question: str
 
+    # Unique request identifier for end-to-end tracing.
+    request_id: str = ""
+
     # ==========================================================
     # Planner Output
     # ==========================================================
@@ -58,7 +61,7 @@ class GraphState:
 
     validated: bool = False
 
-    # Will be used in Sprint 8.4
+    # Will be enhanced in Sprint 9.4
     confidence_score: float = 0.0
 
     # ==========================================================
@@ -70,7 +73,7 @@ class GraphState:
     metadata: dict[str, object] = field(default_factory=dict)
 
     # ==========================================================
-    # Conversational History
+    # Conversation History
     # ==========================================================
 
     conversation_history: list[ConversationTurn] = field(

@@ -94,3 +94,12 @@ def test_graph_state_prompt_and_answer():
 
     assert state.prompt == "Prompt"
     assert state.answer == "Answer"
+
+def test_graph_state_default_request_id() -> None:
+    """
+    GraphState should initialize with an empty request ID.
+    """
+
+    state = GraphState(question="What is comprehensive coverage?")
+
+    assert state.request_id == ""
