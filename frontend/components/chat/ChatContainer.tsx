@@ -59,7 +59,6 @@ function getWorkflowValue(
 export default function ChatContainer() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [events, setEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +83,7 @@ export default function ChatContainer() {
       id: assistantMessageId,
       role: "assistant",
       content: "",
+      status: "🧭 Planning request...",
       createdAt: new Date(),
     };
 
@@ -94,7 +94,6 @@ export default function ChatContainer() {
     ]);
 
     setQuestion("");
-    setEvents([]);
     setError(null);
     setLoading(true);
 
@@ -105,11 +104,7 @@ export default function ChatContainer() {
         },
         (event) => {
           /*
-           * Token events are emitted while the LLM is
-           * generating the answer.
-           *
-           * Append each token/chunk to the existing
-           * assistant placeholder message.
+           * LLM token/chunk event.
            */
           if (event.type === "token") {
             const content = event.data.content;
@@ -125,6 +120,7 @@ export default function ChatContainer() {
                       ...message,
                       content:
                         message.content + content,
+                      status: undefined,
                     }
                   : message,
               ),
@@ -134,16 +130,21 @@ export default function ChatContainer() {
           }
 
           /*
-           * Workflow updates are emitted when LangGraph
-           * nodes complete.
+           * LangGraph node update.
            */
           const status = getWorkflowStatus(event);
 
           if (status) {
-            setEvents((previous) => [
-              ...previous,
-              status,
-            ]);
+            setMessages((previous) =>
+              previous.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      status,
+                    }
+                  : message,
+              ),
+            );
           }
 
           const value = getWorkflowValue(event);
@@ -152,14 +153,6 @@ export default function ChatContainer() {
             return;
           }
 
-          /*
-           * The reasoning update contains the complete
-           * answer. Do not append it because the answer
-           * has already been assembled from token events.
-           *
-           * We use it only as a fallback in case token
-           * streaming produced no content.
-           */
           setMessages((previous) =>
             previous.map((message) => {
               if (message.id !== assistantMessageId) {
@@ -211,12 +204,24 @@ export default function ChatContainer() {
                 content:
                   message.content ||
                   "Unable to generate a response. Please try again.",
+                status: undefined,
               }
             : message,
         ),
       );
     } finally {
       setLoading(false);
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                status: undefined,
+              }
+            : message,
+        ),
+      );
     }
   }
 
@@ -235,20 +240,6 @@ export default function ChatContainer() {
       <div className="min-h-0 flex-1 p-6">
         <ChatMessages messages={messages} />
       </div>
-
-      {events.length > 0 && loading && (
-        <div className="px-6 pb-4">
-          <div className="rounded-md bg-muted p-3 text-sm">
-            <div className="font-medium">
-              Workflow Status
-            </div>
-
-            <div className="mt-1 text-muted-foreground">
-              {events[events.length - 1]}
-            </div>
-          </div>
-        </div>
-      )}
 
       {error && (
         <div className="px-6 pb-4">
@@ -280,8 +271,6 @@ export default function ChatContainer() {
           </button>
         </div>
       </div>
-
-      <pre>{JSON.stringify(messages, null, 2)}</pre>
     </section>
   );
 }

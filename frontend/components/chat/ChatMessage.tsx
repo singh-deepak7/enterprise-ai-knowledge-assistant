@@ -15,6 +15,11 @@ export default function ChatMessage({
 }: ChatMessageProps) {
   const isUser = message.role === "user";
 
+  const showStatus =
+    !isUser &&
+    !message.content &&
+    Boolean(message.status);
+
   return (
     <div
       className={`flex ${
@@ -28,9 +33,20 @@ export default function ChatMessage({
             : "bg-muted"
         }`}
       >
-        <div className="whitespace-pre-wrap">
-          {message.content}
-        </div>
+        {showStatus ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span
+              className="inline-block h-2 w-2 animate-pulse rounded-full bg-current"
+              aria-hidden="true"
+            />
+
+            <span>{message.status}</span>
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap">
+            {message.content}
+          </div>
+        )}
 
         {!isUser &&
           message.confidenceScore !== undefined && (
