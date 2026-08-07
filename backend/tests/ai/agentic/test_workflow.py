@@ -164,3 +164,45 @@ def test_workflow_uses_conversation_memory():
         session_id="default",
         message="Answer",
     )
+
+def test_workflow_records_duration_metadata():
+    workflow = build_workflow()
+
+    workflow._graph = Mock()
+
+    workflow._conversation_memory = Mock()
+
+    workflow._conversation_memory.get_history.return_value = []
+
+    workflow._graph.invoke.return_value = GraphState(
+        question="Coverage?",
+        answer="Answer",
+    )
+
+    result = workflow.invoke("Coverage?")
+
+    assert "workflow" in result.metadata
+
+    assert "duration_ms" in result.metadata["workflow"]
+
+    assert result.metadata["workflow"]["duration_ms"] >= 0
+
+def test_workflow_records_memory_messages():
+    workflow = build_workflow()
+
+    workflow._graph = Mock()
+
+    workflow._conversation_memory = Mock()
+
+    workflow._conversation_memory.get_history.return_value = []
+
+    workflow._graph.invoke.return_value = GraphState(
+        question="Coverage?",
+        answer="Answer",
+    )
+
+    workflow.invoke("Coverage?")
+
+    workflow._conversation_memory.add_user_message.assert_called_once()
+
+    workflow._conversation_memory.add_assistant_message.assert_called_once()

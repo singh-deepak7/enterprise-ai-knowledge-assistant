@@ -5,6 +5,7 @@ LangGraph workflow for the Enterprise AI Knowledge Assistant.
 from __future__ import annotations
 
 import logging
+import time
 
 from langgraph.graph import END, START, StateGraph
 
@@ -69,6 +70,8 @@ class AgenticWorkflow:
             "Starting agentic workflow."
         )
 
+        workflow_start = time.perf_counter()
+
         session_id = "default"
 
         history = self._conversation_memory.get_history(
@@ -91,16 +94,30 @@ class AgenticWorkflow:
             initial_state,
         )
 
-        logger.info(
-            "Agentic workflow completed."
-        )
-
         if not isinstance(result, GraphState):
             result = GraphState(**result)
+
+        workflow_duration_ms = round(
+            (time.perf_counter() - workflow_start) * 1000,
+            2,
+        )
+
+        result.metadata.setdefault("workflow", {})
+
+        result.metadata["workflow"].update(
+            {
+                "duration_ms": workflow_duration_ms,
+            }
+        )
 
         self._conversation_memory.add_assistant_message(
             session_id=session_id,
             message=result.answer,
+        )
+
+        logger.info(
+            "Agentic workflow completed in %.2f ms.",
+            workflow_duration_ms,
         )
 
         return result
