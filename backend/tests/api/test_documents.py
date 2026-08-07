@@ -6,6 +6,13 @@ from app.repositories.document_repository import (
     DocumentRecord,
     DocumentRepository,
 )
+from unittest.mock import Mock
+
+from app.dependencies import (
+    get_document_repository,
+    get_document_service,
+)
+from app.services.document_service import DocumentService
 
 client = TestClient(app)
 
@@ -49,5 +56,58 @@ def test_list_documents(
                 }
             ]
         }
+    finally:
+        app.dependency_overrides.clear()
+
+def test_delete_document() -> None:
+    service = Mock(
+        spec=DocumentService
+    )
+
+    service.delete.return_value = True
+
+    app.dependency_overrides[
+        get_document_service
+    ] = lambda: service
+
+    try:
+        response = client.delete(
+            "/api/v1/documents/doc-123"
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""
+
+        service.delete.assert_called_once_with(
+            "doc-123"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+def test_delete_unknown_document() -> None:
+    service = Mock(
+        spec=DocumentService
+    )
+
+    service.delete.return_value = False
+
+    app.dependency_overrides[
+        get_document_service
+    ] = lambda: service
+
+    try:
+        response = client.delete(
+            "/api/v1/documents/missing"
+        )
+
+        assert response.status_code == 404
+
+        assert response.json() == {
+            "detail": "Document not found."
+        }
+
+        service.delete.assert_called_once_with(
+            "missing"
+        )
     finally:
         app.dependency_overrides.clear()

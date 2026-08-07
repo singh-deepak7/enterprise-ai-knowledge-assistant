@@ -41,3 +41,12 @@ class BaseVectorStoreProvider(ABC):
         ids: list[str],
     ) -> None:
         """Delete documents by id."""
+
+    @abstractmethod
+    def delete_by_document_id(
+        self,
+        document_id: str,
+    ) -> None:
+        """
+        Delete all indexed chunks belonging to a document.
+        """

@@ -95,3 +95,22 @@ class ChromaProvider(BaseVectorStoreProvider):
             query=query,
             k=k,
         )
+
+    def delete_by_document_id(
+        self,
+        document_id: str,
+    ) -> None:
+        """
+        Delete all chunks belonging to an uploaded document.
+        """
+
+        logger.info(
+            "Deleting Chroma chunks for document_id=%s.",
+            document_id,
+        )
+
+        self._store.delete(
+            where={
+                "document_id": document_id,
+            }
+        )

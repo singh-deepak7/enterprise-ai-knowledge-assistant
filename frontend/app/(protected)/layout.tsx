@@ -1,3 +1,5 @@
+import AppNavigation from "@/components/layout/AppNavigation";
+
 export default function ProtectedLayout({
   children,
 }: {
@@ -5,7 +7,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      {children}
+      <AppNavigation />
+
+      <main>
+        {children}
+      </main>
     </div>
   );
 }

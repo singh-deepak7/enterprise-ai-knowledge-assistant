@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 from langchain_core.documents import Document
 
+from app.ai.vectorstores.providers.base_provider import BaseVectorStoreProvider
 from app.ai.vectorstores.vector_store_service import VectorStoreService
 
 
@@ -111,3 +112,33 @@ def test_delete_empty():
     service.delete([])
 
     provider.delete.assert_not_called()
+
+def test_delete_by_document_id() -> None:
+    provider = Mock(
+        spec=BaseVectorStoreProvider
+    )
+
+    service = VectorStoreService(
+        provider=provider
+    )
+
+    service.delete_by_document_id(
+        "doc-123"
+    )
+
+    provider.delete_by_document_id.assert_called_once_with(
+        "doc-123"
+    )
+
+def test_delete_by_document_id_ignores_empty_id() -> None:
+    provider = Mock(
+        spec=BaseVectorStoreProvider
+    )
+
+    service = VectorStoreService(
+        provider=provider
+    )
+
+    service.delete_by_document_id("")
+
+    provider.delete_by_document_id.assert_not_called()

@@ -91,3 +91,26 @@ class VectorStoreService:
             query=query,
             k=k,
         )
+
+    def delete_by_document_id(
+        self,
+        document_id: str,
+    ) -> None:
+        """
+        Delete all indexed chunks belonging to an uploaded document.
+        """
+
+        if not document_id:
+            logger.warning(
+                "No document id supplied for deletion."
+            )
+            return
+
+        logger.info(
+            "Deleting indexed chunks for document_id=%s.",
+            document_id,
+        )
+
+        self._provider.delete_by_document_id(
+            document_id
+        )
