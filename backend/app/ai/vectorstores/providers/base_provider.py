@@ -24,6 +24,18 @@ class BaseVectorStoreProvider(ABC):
         """Retrieve similar documents."""
 
     @abstractmethod
+    def similarity_search_with_scores(
+        self,
+        query: str,
+        k: int = 5,
+    ) -> list[tuple[Document, float]]:
+        """
+        Retrieve similar documents with relevance scores.
+
+        Higher scores indicate greater relevance.
+        """
+
+    @abstractmethod
     def delete(
         self,
         ids: list[str],

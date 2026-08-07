@@ -6,6 +6,8 @@ from app.ai.embeddings.providers.base_embedding_provider import BaseEmbeddingPro
 from app.ai.embeddings.providers.openai_embedding_provider import OpenAIEmbeddingProvider
 from app.ai.vectorstores.providers.base_provider import BaseVectorStoreProvider
 from app.core.config import settings
+from langchain_core.documents import Document
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,3 +76,22 @@ class ChromaProvider(BaseVectorStoreProvider):
         )
 
         self._store.delete(ids=ids)
+
+    def similarity_search_with_scores(
+        self,
+        query: str,
+        k: int = 5,
+    ) -> list[tuple[Document, float]]:
+        """
+        Search Chroma and return documents with relevance scores.
+        """
+
+        logger.info(
+            "Searching Chroma with relevance scores (top_k=%d).",
+            k,
+        )
+
+        return self._store.similarity_search_with_relevance_scores(
+            query=query,
+            k=k,
+        )

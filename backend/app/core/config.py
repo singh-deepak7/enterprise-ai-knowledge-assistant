@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     EMBEDDING_BATCH_SIZE: int = 100
 
     TOP_K_RESULTS: int = 5
-    SIMILARITY_SCORE_THRESHOLD: float = 0.7
+    SIMILARITY_SCORE_THRESHOLD: float = 0.20
 
     AI_DEBUG: bool = False
 

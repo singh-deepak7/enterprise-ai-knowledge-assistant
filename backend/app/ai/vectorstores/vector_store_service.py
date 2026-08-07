@@ -72,3 +72,22 @@ class VectorStoreService:
             return
 
         self._provider.delete(ids)
+
+    def similarity_search_with_scores(
+        self,
+        query: str,
+        k: int = 5,
+    ) -> list[tuple[Document, float]]:
+        """
+        Search for similar documents with relevance scores.
+        """
+
+        logger.info(
+            "Executing similarity search with scores (top_k=%d).",
+            k,
+        )
+
+        return self._provider.similarity_search_with_scores(
+            query=query,
+            k=k,
+        )
