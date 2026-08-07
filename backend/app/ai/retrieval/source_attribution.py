@@ -18,8 +18,14 @@ class SourceAttribution:
         """
         Convert retrieved documents into source metadata.
 
+        Prefer the original uploaded filename for user-facing
+        citations while falling back to the stored source path
+        for documents indexed before original filename metadata
+        was introduced.
+
         Args:
-            documents: Retrieved LangChain documents.
+            documents:
+                Retrieved LangChain documents.
 
         Returns:
             List of source metadata dictionaries.
@@ -35,12 +41,15 @@ class SourceAttribution:
         for document in documents:
             metadata = document.metadata or {}
 
+            source = (
+                metadata.get("original_filename")
+                or metadata.get("source")
+                or "Unknown"
+            )
+
             sources.append(
                 {
-                    "source": metadata.get(
-                        "source",
-                        "Unknown",
-                    ),
+                    "source": source,
                     "page": metadata.get(
                         "page",
                     ),

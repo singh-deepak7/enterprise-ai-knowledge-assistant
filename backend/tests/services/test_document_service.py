@@ -9,7 +9,6 @@ from app.services.document_service import DocumentService
 @pytest.mark.asyncio
 async def test_upload_indexes_document() -> None:
     validation_service = AsyncMock()
-
     storage_service = AsyncMock()
 
     storage_service.save.return_value = StorageResult(
@@ -38,7 +37,9 @@ async def test_upload_indexes_document() -> None:
     storage_service.save.assert_awaited_once_with(file)
 
     indexing_service.index_document.assert_called_once_with(
-        "/tmp/abc123.pdf",
+        file_path="/tmp/abc123.pdf",
+        document_id="123",
+        original_filename="sample.pdf",
     )
 
     assert result.document_id == "123"

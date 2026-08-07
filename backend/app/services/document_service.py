@@ -44,7 +44,9 @@ class DocumentService:
         )
 
         chunk_count = self.indexing_service.index_document(
-            result.file_path,
+            file_path=result.file_path,
+            document_id=result.document_id,
+            original_filename=result.original_filename,
         )
 
         logger.info(

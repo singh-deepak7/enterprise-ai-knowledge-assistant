@@ -68,3 +68,29 @@ def test_build_sources_missing_metadata() -> None:
             "chunk": None,
         }
     ]
+
+def test_source_attribution_prefers_original_filename() -> None:
+    attribution = SourceAttribution()
+
+    documents = [
+        Document(
+            page_content="Sample content",
+            metadata={
+                "source": "app/uploads/abc123.pdf",
+                "original_filename": "insurance-policy.pdf",
+                "page": 2,
+            },
+        )
+    ]
+
+    sources = attribution.build_sources(
+        documents,
+    )
+
+    assert sources == [
+        {
+            "source": "insurance-policy.pdf",
+            "page": 2,
+            "chunk": None,
+        }
+    ]

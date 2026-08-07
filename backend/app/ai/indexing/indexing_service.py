@@ -26,12 +26,19 @@ class IndexingService:
     def index_document(
         self,
         file_path: str | Path,
+        document_id: str | None = None,
+        original_filename: str | None = None,
     ) -> int:
         """
-        Load, chunk, and index a document.
+        Load, enrich, chunk, and index a document.
 
         Args:
-            file_path: Path to the document.
+            file_path:
+                Path to the stored document.
+            document_id:
+                Unique identifier assigned during storage.
+            original_filename:
+                Human-readable filename supplied by the user.
 
         Returns:
             Number of chunks indexed.
@@ -39,27 +46,62 @@ class IndexingService:
 
         file_path = Path(file_path)
 
-        logger.info("Starting indexing for %s", file_path.name)
+        logger.info(
+            "Starting indexing for %s",
+            file_path.name,
+        )
 
-        # Select appropriate loader
-        loader = LoaderFactory.get_loader(file_path)
+        loader = LoaderFactory.get_loader(
+            file_path,
+        )
 
-        # Load document
-        documents = loader.load(file_path)
+        documents = loader.load(
+            file_path,
+        )
 
-        logger.info("Loaded %d document(s)", len(documents))
+        logger.info(
+            "Loaded %d document(s)",
+            len(documents),
+        )
 
-        # Chunk document
-        chunks = self._chunk_service.chunk_documents(documents)
+        # Add storage-level metadata before chunking.
+        #
+        # The loader sees the UUID-based stored filename,
+        # while original_filename preserves the filename
+        # uploaded by the user.
+        for document in documents:
+            if document_id:
+                document.metadata[
+                    "document_id"
+                ] = document_id
 
-        logger.info("Generated %d chunk(s)", len(chunks))
+            if original_filename:
+                document.metadata[
+                    "original_filename"
+                ] = original_filename
 
-        # Store in vector database
-        self._vector_store_service.add_documents(chunks)
+            document.metadata[
+                "stored_filename"
+            ] = file_path.name
+
+        chunks = (
+            self._chunk_service.chunk_documents(
+                documents,
+            )
+        )
+
+        logger.info(
+            "Generated %d chunk(s)",
+            len(chunks),
+        )
+
+        self._vector_store_service.add_documents(
+            chunks,
+        )
 
         logger.info(
             "Successfully indexed '%s' with %d chunk(s)",
-            file_path.name,
+            original_filename or file_path.name,
             len(chunks),
         )
 
