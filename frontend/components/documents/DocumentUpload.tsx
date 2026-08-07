@@ -5,7 +5,27 @@ import { useState } from "react";
 import { uploadDocument } from "@/services/uploadService";
 import type { UploadResponse } from "@/types/upload";
 
-function formatFileSize(sizeBytes: number): string {
+const MAX_UPLOAD_SIZE_MB = 25;
+const MAX_UPLOAD_SIZE_BYTES =
+  MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".txt",
+  ".csv",
+  ".xlsx",
+];
+
+const ACCEPTED_FILE_TYPES = [
+  ".pdf",
+  ".txt",
+  ".csv",
+  ".xlsx",
+].join(",");
+
+function formatFileSize(
+  sizeBytes: number,
+): string {
   if (sizeBytes < 1024) {
     return `${sizeBytes} B`;
   }
@@ -21,6 +41,55 @@ function formatFileSize(sizeBytes: number): string {
   return `${sizeMb.toFixed(1)} MB`;
 }
 
+function getFileExtension(
+  filename: string,
+): string {
+  const lastDotIndex =
+    filename.lastIndexOf(".");
+
+  if (lastDotIndex === -1) {
+    return "";
+  }
+
+  return filename
+    .slice(lastDotIndex)
+    .toLowerCase();
+}
+
+function validateFile(
+  file: File,
+): string | null {
+  const extension =
+    getFileExtension(file.name);
+
+  if (
+    !ALLOWED_EXTENSIONS.includes(
+      extension,
+    )
+  ) {
+    return (
+      "Unsupported file type. " +
+      "Allowed types: PDF, TXT, CSV, XLSX."
+    );
+  }
+
+  if (file.size === 0) {
+    return "The selected file is empty.";
+  }
+
+  if (
+    file.size >
+    MAX_UPLOAD_SIZE_BYTES
+  ) {
+    return (
+      `File is too large. ` +
+      `Maximum size is ${MAX_UPLOAD_SIZE_MB} MB.`
+    );
+  }
+
+  return null;
+}
+
 export default function DocumentUpload() {
   const [selectedFile, setSelectedFile] =
     useState<File | null>(null);
@@ -32,7 +101,9 @@ export default function DocumentUpload() {
     useState<string | null>(null);
 
   const [result, setResult] =
-    useState<UploadResponse | null>(null);
+    useState<UploadResponse | null>(
+      null,
+    );
 
   function handleFileChange(
     event: React.ChangeEvent<HTMLInputElement>,
@@ -40,13 +111,42 @@ export default function DocumentUpload() {
     const file =
       event.target.files?.[0] ?? null;
 
-    setSelectedFile(file);
     setError(null);
     setResult(null);
+
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    const validationError =
+      validateFile(file);
+
+    if (validationError) {
+      setSelectedFile(null);
+      setError(validationError);
+
+      event.target.value = "";
+
+      return;
+    }
+
+    setSelectedFile(file);
   }
 
   async function handleUpload() {
-    if (!selectedFile || uploading) {
+    if (
+      !selectedFile ||
+      uploading
+    ) {
+      return;
+    }
+
+    const validationError =
+      validateFile(selectedFile);
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -84,12 +184,21 @@ export default function DocumentUpload() {
         </p>
       </div>
 
-      <input
-        type="file"
-        disabled={uploading}
-        onChange={handleFileChange}
-        className="block w-full text-sm"
-      />
+      <div className="space-y-2">
+        <input
+          type="file"
+          accept={ACCEPTED_FILE_TYPES}
+          disabled={uploading}
+          onChange={handleFileChange}
+          className="block w-full text-sm"
+        />
+
+        <p className="text-xs text-muted-foreground">
+          Supported: PDF, TXT, CSV, XLSX
+          {" · "}
+          Maximum size: {MAX_UPLOAD_SIZE_MB} MB
+        </p>
+      </div>
 
       {selectedFile && (
         <div className="rounded-md bg-muted p-3 text-sm">
@@ -132,7 +241,10 @@ export default function DocumentUpload() {
           </div>
 
           <div className="mt-2 text-muted-foreground">
-            {result.data.original_filename}
+            {
+              result.data
+                .original_filename
+            }
           </div>
 
           <div className="text-muted-foreground">
