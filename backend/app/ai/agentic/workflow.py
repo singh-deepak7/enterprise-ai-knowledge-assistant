@@ -9,6 +9,7 @@ import time
 import uuid
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from app.ai.agentic.graph_state import GraphState
 from app.ai.agentic.nodes.planner_node import planner_node
@@ -17,12 +18,9 @@ from app.ai.agentic.nodes.retrieval_node import retrieval_node
 from app.ai.agentic.nodes.validation_node import validation_node
 from app.ai.llm.llm_service import LLMService
 from app.ai.llm.prompt_builder import PromptBuilder
+from app.ai.memory.conversation_memory import ConversationMemory
 from app.ai.retrieval.retrieval_service import RetrievalService
 from app.ai.retrieval.source_attribution import SourceAttribution
-from langgraph.graph.state import CompiledStateGraph
-
-from app.ai.memory.conversation_memory import ConversationMemory
-
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +42,19 @@ class AgenticWorkflow:
         self._retrieval_service = (
             retrieval_service or RetrievalService()
         )
+
         self._prompt_builder = (
             prompt_builder or PromptBuilder()
         )
+
         self._llm_service = (
             llm_service or LLMService()
         )
+
         self._source_attribution = (
             source_attribution or SourceAttribution()
         )
+
         self._conversation_memory = (
             conversation_memory or ConversationMemory()
         )
@@ -67,23 +69,19 @@ class AgenticWorkflow:
         Execute the complete agentic workflow.
         """
 
-        logger.info(
-            "Starting agentic workflow."
-        )
-
         workflow_start = time.perf_counter()
 
         session_id = "default"
 
-        history = self._conversation_memory.get_history(
-            session_id
-        )
-
         request_id = str(uuid.uuid4())
 
         logger.info(
-            "Starting agentic workflow. request_id=%s",
+            "Starting agentic workflow [request_id=%s]",
             request_id,
+        )
+
+        history = self._conversation_memory.get_history(
+            session_id,
         )
 
         initial_state = GraphState(
@@ -92,8 +90,8 @@ class AgenticWorkflow:
             conversation_history=history,
         )
 
-        # Store the current user message after loading history so it
-        # isn't duplicated in the prompt for this turn.
+        # Store the current user message after loading history so
+        # it does not appear twice in the current prompt.
         self._conversation_memory.add_user_message(
             session_id=session_id,
             message=question,
@@ -111,10 +109,15 @@ class AgenticWorkflow:
             2,
         )
 
-        result.metadata.setdefault("workflow", {})
+        result.metadata.setdefault(
+            "workflow",
+            {},
+        )
 
         result.metadata["workflow"].update(
             {
+                "request_id": request_id,
+                "status": "success",
                 "duration_ms": workflow_duration_ms,
             }
         )
@@ -125,17 +128,11 @@ class AgenticWorkflow:
         )
 
         logger.info(
-            "[%s] Agentic workflow completed in %.2f ms.",
-            result.request_id,
+            "Agentic workflow completed "
+            "[request_id=%s duration=%.2fms]",
+            request_id,
             workflow_duration_ms,
         )
-
-        result.metadata.setdefault(
-            "workflow",
-            {},
-        )
-
-        result.metadata["workflow"]["request_id"] = request_id
 
         return result
 
@@ -154,7 +151,7 @@ class AgenticWorkflow:
         state: GraphState,
     ) -> str:
         """
-        Determine the next workflow step after planning.
+        Route the workflow after planning.
         """
 
         logger.debug(
@@ -207,7 +204,9 @@ class AgenticWorkflow:
             source_attribution=self._source_attribution,
         )
 
-    def _build_graph(self) -> CompiledStateGraph:
+    def _build_graph(
+        self,
+    ) -> CompiledStateGraph:
         """
         Build and compile the LangGraph workflow.
         """
@@ -246,10 +245,10 @@ class AgenticWorkflow:
         builder.add_conditional_edges(
             "planner",
             self._route_after_planner,
-                {
-                    "retrieval": "retrieval",
-                    "reasoning": "reasoning",
-                },
+            {
+                "retrieval": "retrieval",
+                "reasoning": "reasoning",
+            },
         )
 
         builder.add_edge(

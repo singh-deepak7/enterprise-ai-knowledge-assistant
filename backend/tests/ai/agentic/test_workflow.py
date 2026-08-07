@@ -227,3 +227,39 @@ def test_workflow_generates_request_id() -> None:
         state.metadata["workflow"]["request_id"]
         == state.request_id
     )
+
+def test_workflow_records_status() -> None:
+    """
+    Workflow should record overall execution status.
+    """
+
+    workflow = AgenticWorkflow(
+        retrieval_service=Mock(),
+        prompt_builder=Mock(),
+        llm_service=Mock(),
+        source_attribution=Mock(),
+        conversation_memory=Mock(),
+    )
+
+    workflow._graph = Mock()
+
+    workflow._graph.invoke.return_value = GraphState(
+        question="Coverage",
+        answer="Answer",
+    )
+
+    workflow._conversation_memory.get_history.return_value = []
+
+    state = workflow.invoke("Coverage")
+
+    assert "workflow" in state.metadata
+
+    assert (
+        state.metadata["workflow"]["status"]
+        == "success"
+    )
+
+    assert (
+        state.metadata["workflow"]["duration_ms"]
+        >= 0
+    )
