@@ -3,8 +3,9 @@
 import { useState } from "react";
 
 import { streamChat } from "@/services/chatStreamService";
+import type { ChatMessage } from "@/types/message";
 
-import type { ChatSource } from "@/types/chat";
+import ChatMessages from "./ChatMessages";
 
 function getWorkflowStatus(event: unknown): string | null {
   if (typeof event !== "object" || event === null) {
@@ -31,201 +32,224 @@ function getWorkflowStatus(event: unknown): string | null {
   }
 }
 
-function getDisplayFileName(path: string): string {
-  return path.split("/").pop() ?? path;
-}
-
 export default function ChatContainer() {
   const [question, setQuestion] = useState("");
-
-  const [answer, setAnswer] = useState("");
-
-  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
-
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [events, setEvents] = useState<string[]>([]);
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
 
-  const [sources, setSources] = useState<ChatSource[]>([]);
-
   async function handleSubmit() {
-    if (!question.trim()) {
+    const submittedQuestion = question.trim();
+
+    if (!submittedQuestion || loading) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setAnswer("");
-    setConfidenceScore(null);
-    setSources([]);
+    const userMessageId = crypto.randomUUID();
+    const assistantMessageId = crypto.randomUUID();
+
+    const userMessage: ChatMessage = {
+      id: userMessageId,
+      role: "user",
+      content: submittedQuestion,
+      createdAt: new Date(),
+    };
+
+    const assistantMessage: ChatMessage = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      createdAt: new Date(),
+    };
+
+    setMessages((previous) => [
+      ...previous,
+      userMessage,
+      assistantMessage,
+    ]);
+
+    setQuestion("");
     setEvents([]);
+    setError(null);
+    setLoading(true);
 
     try {
       await streamChat(
         {
-          question,
+          question: submittedQuestion,
         },
-
         (event) => {
           const status = getWorkflowStatus(event);
 
           if (status) {
-            setEvents((previous) => [...previous, status]);
+            setEvents((previous) => [
+              ...previous,
+              status,
+            ]);
+
+            setMessages((previous) =>
+              previous.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      status,
+                    }
+                  : message,
+              ),
+            );
           }
 
-          if (typeof event === "object" && event !== null) {
-            const value = Object.values(event)[0];
-
-            if (typeof value === "object" && value !== null) {
-              if ("answer" in value && typeof value.answer === "string") {
-                setAnswer(value.answer);
-              }
-
-              if (
-                "confidence_score" in value &&
-                typeof value.confidence_score === "number"
-              ) {
-                setConfidenceScore(value.confidence_score);
-              }
-
-              if ("sources" in value && Array.isArray(value.sources)) {
-                setSources(value.sources);
-              }
-            }
+          if (
+            typeof event !== "object" ||
+            event === null
+          ) {
+            return;
           }
+
+          const value = Object.values(event)[0];
+
+          if (
+            typeof value !== "object" ||
+            value === null
+          ) {
+            return;
+          }
+
+          setMessages((previous) =>
+            previous.map((message) => {
+              if (message.id !== assistantMessageId) {
+                return message;
+              }
+
+              return {
+                ...message,
+
+                content:
+                  "answer" in value &&
+                  typeof value.answer === "string" &&
+                  value.answer.length > 0
+                    ? value.answer
+                    : message.content,
+
+                confidenceScore:
+                  "confidence_score" in value &&
+                  typeof value.confidence_score === "number"
+                    ? value.confidence_score
+                    : message.confidenceScore,
+
+                sources:
+                  "sources" in value &&
+                  Array.isArray(value.sources) &&
+                  value.sources.length > 0
+                    ? value.sources
+                    : message.sources,
+              };
+            }),
+          );
         },
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Streaming failed");
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Streaming failed";
+
+      setError(errorMessage);
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content:
+                  "Unable to generate a response. Please try again.",
+                status: undefined,
+              }
+            : message,
+        ),
+      );
     } finally {
       setLoading(false);
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                status: undefined,
+              }
+            : message,
+        ),
+      );
     }
   }
 
   return (
-    <section
-      className="
-        space-y-6
-        rounded-lg
-        border
-        p-6
-      "
-    >
-      <div>
-        <h1 className="text-2xl font-semibold">Enterprise AI Assistant</h1>
+    <section className="flex min-h-[70vh] flex-col rounded-lg border">
+      <div className="border-b p-6">
+        <h1 className="text-2xl font-semibold">
+          Enterprise AI Assistant
+        </h1>
 
         <p className="text-muted-foreground">
           Ask questions about your knowledge base.
         </p>
       </div>
 
-      <textarea
-        className="
-          min-h-32
-          w-full
-          rounded-md
-          border
-          p-3
-        "
-        placeholder="Ask your question..."
-        value={question}
-        onChange={(event) => setQuestion(event.target.value)}
-      />
+      <div className="min-h-0 flex-1 p-6">
+        <ChatMessages messages={messages} />
+      </div>
 
-      <button
-        className="
-          rounded-md
-          bg-primary
-          px-4
-          py-2
-          text-primary-foreground
-        "
-        disabled={loading}
-        onClick={handleSubmit}
-      >
-        {loading ? "Generating..." : "Ask"}
-      </button>
+      {events.length > 0 && loading && (
+        <div className="px-6 pb-4">
+          <div className="rounded-md bg-muted p-3 text-sm">
+            <div className="font-medium">
+              Workflow Status
+            </div>
 
-      {error && (
-        <div
-          className="
-            rounded-md
-            border
-            border-red-500
-            p-3
-            text-red-500
-          "
-        >
-          {error}
-        </div>
-      )}
-
-      {events.length > 0 && (
-        <div
-          className="
-            rounded-md
-            bg-muted
-            p-4
-            text-sm
-          "
-        >
-          <h2 className="mb-2 font-semibold">Workflow Status</h2>
-
-          {events.map((event, index) => (
-            <div key={index}>{event}</div>
-          ))}
-        </div>
-      )}
-
-      {confidenceScore !== null && (
-        <div
-          className="
-      rounded-md
-      border
-      p-3
-      text-sm
-    "
-        >
-          Confidence Score: {(confidenceScore * 100).toFixed(0)}%
-        </div>
-      )}
-
-      {answer && (
-        <div
-          className="
-            rounded-md
-            bg-muted
-            p-4
-          "
-        >
-          <h2 className="font-semibold">Answer</h2>
-
-          <p className="mt-2">{answer}</p>
-        </div>
-      )}
-
-      {sources.length > 0 && (
-        <div
-          className="
-      rounded-md
-      border
-      p-4
-    "
-        >
-          <h2 className="font-semibold">📚 Sources</h2>
-
-          <div className="mt-3 space-y-2">
-            {sources.map((source, index) => (
-              <div key={index} className="text-sm">
-                📄 {getDisplayFileName(source.source)}
-                <div>Page {source.page}</div>
-              </div>
-            ))}
+            <div className="mt-1 text-muted-foreground">
+              {events[events.length - 1]}
+            </div>
           </div>
         </div>
       )}
+
+      {error && (
+        <div className="px-6 pb-4">
+          <div className="rounded-md border border-red-500 p-3 text-sm text-red-500">
+            {error}
+          </div>
+        </div>
+      )}
+
+      <div className="border-t p-6">
+        <div className="flex gap-3">
+          <textarea
+            className="min-h-24 flex-1 resize-none rounded-md border p-3"
+            placeholder="Ask your question..."
+            value={question}
+            disabled={loading}
+            onChange={(event) =>
+              setQuestion(event.target.value)
+            }
+          />
+
+          <button
+            type="button"
+            className="self-end rounded-md bg-primary px-5 py-3 text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={loading || !question.trim()}
+            onClick={handleSubmit}
+          >
+            {loading ? "Generating..." : "Ask"}
+          </button>
+        </div>
+      </div>
+
+      <pre>{JSON.stringify(messages, null, 2)}</pre>
     </section>
   );
 }
+
+      
+
