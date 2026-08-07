@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 
 from langgraph.graph import END, START, StateGraph
 
@@ -78,8 +79,16 @@ class AgenticWorkflow:
             session_id
         )
 
+        request_id = str(uuid.uuid4())
+
+        logger.info(
+            "Starting agentic workflow. request_id=%s",
+            request_id,
+        )
+
         initial_state = GraphState(
             question=question,
+            request_id=request_id,
             conversation_history=history,
         )
 
@@ -116,9 +125,17 @@ class AgenticWorkflow:
         )
 
         logger.info(
-            "Agentic workflow completed in %.2f ms.",
+            "[%s] Agentic workflow completed in %.2f ms.",
+            result.request_id,
             workflow_duration_ms,
         )
+
+        result.metadata.setdefault(
+            "workflow",
+            {},
+        )
+
+        result.metadata["workflow"]["request_id"] = request_id
 
         return result
 

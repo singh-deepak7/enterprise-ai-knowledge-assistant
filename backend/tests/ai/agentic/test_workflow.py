@@ -1,5 +1,4 @@
-from unittest.mock import Mock
-
+from unittest.mock import Mock, patch
 from app.ai.agentic.graph_state import GraphState
 from app.ai.agentic.workflow import AgenticWorkflow
 from app.ai.llm.llm_service import LLMService
@@ -7,6 +6,8 @@ from app.ai.llm.prompt_builder import PromptBuilder
 from app.ai.memory.conversation_memory import ConversationMemory
 from app.ai.retrieval.retrieval_service import RetrievalService
 from app.ai.retrieval.source_attribution import SourceAttribution
+import uuid
+
 
 
 def build_workflow(
@@ -206,3 +207,23 @@ def test_workflow_records_memory_messages():
     workflow._conversation_memory.add_user_message.assert_called_once()
 
     workflow._conversation_memory.add_assistant_message.assert_called_once()
+
+def test_workflow_generates_request_id() -> None:
+    workflow = build_workflow()
+
+    workflow._graph = Mock()
+
+    workflow._graph.invoke.side_effect = (
+        lambda state: state
+    )
+
+    state = workflow.invoke("Coverage")
+
+    assert state.request_id != ""
+
+    uuid.UUID(state.request_id)
+
+    assert (
+        state.metadata["workflow"]["request_id"]
+        == state.request_id
+    )
