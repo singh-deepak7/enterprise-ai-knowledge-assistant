@@ -13,7 +13,7 @@ from app.ai.retrieval.retrieval_service import RetrievalService
 def test_retrieval_node_success() -> None:
     """
     Retrieval node should populate the graph state with
-    retrieved documents and metadata.
+    retrieved documents and observability metadata.
     """
 
     documents = [
@@ -38,6 +38,8 @@ def test_retrieval_node_success() -> None:
 
     state = GraphState(
         question="What is comprehensive coverage?",
+        retrieval_strategy="hybrid",
+        top_k=5,
     )
 
     result = retrieval_node(
@@ -46,8 +48,8 @@ def test_retrieval_node_success() -> None:
     )
 
     retrieval_service.retrieve.assert_called_once_with(
-    query="What is comprehensive coverage?",
-    top_k=5,
+        query="What is comprehensive coverage?",
+        top_k=5,
     )
 
     assert result is state
@@ -55,8 +57,13 @@ def test_retrieval_node_success() -> None:
     assert result.retrieved_chunks == documents
 
     assert "retrieval" in result.metadata
-    assert result.metadata["retrieval"]["chunk_count"] == 2
-    assert result.metadata["retrieval"]["duration_ms"] >= 0
+
+    metadata = result.metadata["retrieval"]
+
+    assert metadata["strategy"] == "hybrid"
+    assert metadata["requested_top_k"] == 5
+    assert metadata["returned_chunks"] == 2
+    assert metadata["duration_ms"] >= 0
 
 
 def test_retrieval_node_empty_result() -> None:
@@ -69,6 +76,8 @@ def test_retrieval_node_empty_result() -> None:
 
     state = GraphState(
         question="Unknown question",
+        retrieval_strategy="hybrid",
+        top_k=5,
     )
 
     result = retrieval_node(
@@ -78,7 +87,12 @@ def test_retrieval_node_empty_result() -> None:
 
     assert result.retrieved_chunks == []
 
-    assert result.metadata["retrieval"]["chunk_count"] == 0
+    metadata = result.metadata["retrieval"]
+
+    assert metadata["strategy"] == "hybrid"
+    assert metadata["requested_top_k"] == 5
+    assert metadata["returned_chunks"] == 0
+    assert metadata["duration_ms"] >= 0
 
 
 def test_retrieval_node_propagates_exception() -> None:
@@ -94,6 +108,8 @@ def test_retrieval_node_propagates_exception() -> None:
 
     state = GraphState(
         question="Coverage",
+        retrieval_strategy="hybrid",
+        top_k=5,
     )
 
     with pytest.raises(RuntimeError):
@@ -114,6 +130,8 @@ def test_retrieval_node_preserves_question() -> None:
 
     state = GraphState(
         question="What is liability insurance?",
+        retrieval_strategy="hybrid",
+        top_k=5,
     )
 
     retrieval_node(
@@ -135,6 +153,8 @@ def test_retrieval_node_preserves_existing_metadata() -> None:
 
     state = GraphState(
         question="Coverage",
+        retrieval_strategy="hybrid",
+        top_k=5,
         metadata={
             "planner": {
                 "workflow": "rag",
@@ -151,4 +171,10 @@ def test_retrieval_node_preserves_existing_metadata() -> None:
     assert "retrieval" in state.metadata
 
     assert state.metadata["planner"]["workflow"] == "rag"
-    assert state.metadata["retrieval"]["chunk_count"] == 0
+
+    retrieval_metadata = state.metadata["retrieval"]
+
+    assert retrieval_metadata["strategy"] == "hybrid"
+    assert retrieval_metadata["requested_top_k"] == 5
+    assert retrieval_metadata["returned_chunks"] == 0
+    assert retrieval_metadata["duration_ms"] >= 0

@@ -39,10 +39,15 @@ def retrieval_node(
     start = time.perf_counter()
 
     try:
-        top_k = state.metadata.get("planner", {}).get("top_k", 5)
+        logger.debug(
+            "Retrieving documents (strategy=%s, top_k=%d).",
+            state.retrieval_strategy,
+            state.top_k,
+        )
+
         documents = retrieval_service.retrieve(
             query=state.question,
-            top_k=top_k,
+            top_k=state.top_k,
         )
 
         state.retrieved_chunks = documents
@@ -53,22 +58,22 @@ def retrieval_node(
         )
 
         state.metadata["retrieval"] = {
-            "chunk_count": len(documents),
-            "top_k": top_k,
+            "strategy": state.retrieval_strategy,
+            "requested_top_k": state.top_k,
+            "returned_chunks": len(documents),
             "duration_ms": elapsed_ms,
         }
 
         if documents:
             logger.info(
-                "Retrieved %d document(s).",
+                "Retrieved %d document(s) in %.2f ms.",
                 len(documents),
+                elapsed_ms,
             )
         else:
             logger.warning(
                 "No relevant documents retrieved."
             )
-
-        logger.info("Retrieval node completed.")
 
         return state
 
