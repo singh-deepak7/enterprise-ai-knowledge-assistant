@@ -21,37 +21,72 @@ FALLBACK_RESPONSE = (
 )
 
 
-def _calculate_confidence(state: GraphState) -> float:
-    """
-    Calculate a deterministic confidence score.
+def _calculate_confidence(
+        state: GraphState,
+    ) -> float:
+        """
+        Calculate confidence using retrieval relevance.
 
-    Scoring:
-        +0.30 -> Retrieved documents
-        +0.30 -> Sources attributed
-        +0.20 -> Non-empty answer
-        +0.20 -> Answer is not fallback
+        Confidence represents evidence strength rather than
+        simply the presence of retrieved documents.
 
-    Maximum = 1.0
-    """
+        Rules:
+            - Empty answer -> 0.0
+            - Fallback answer -> 0.0
+            - No retrieved evidence -> 0.0
+            - Otherwise derive confidence from the average
+            retrieval relevance score.
+        """
 
-    score = 0.0
+        answer = state.answer.strip()
 
-    if state.retrieved_chunks:
-        score += 0.30
+        if not answer:
+            return 0.0
 
-    if state.sources:
-        score += 0.30
+        if answer == FALLBACK_RESPONSE:
+            return 0.0
 
-    if state.answer.strip():
-        score += 0.20
+        if not state.retrieved_chunks:
+            return 0.0
 
-    if (
-        state.answer.strip()
-        and state.answer.strip() != FALLBACK_RESPONSE
-    ):
-        score += 0.20
+        relevance_scores: list[float] = []
 
-    return round(min(score, 1.0), 2)
+        for document in state.retrieved_chunks:
+            score = document.metadata.get(
+                "relevance_score"
+            )
+
+            if isinstance(score, (int, float)):
+                relevance_scores.append(
+                    float(score)
+                )
+
+        if not relevance_scores:
+            return 0.0
+
+        average_relevance = (
+            sum(relevance_scores)
+            / len(relevance_scores)
+        )
+
+        # Map accepted retrieval relevance into a more
+        # understandable evidence-confidence range.
+        #
+        # relevance 0.20 -> confidence 0.50
+        # relevance 0.40 -> confidence 0.75
+        # relevance 0.60 -> confidence 1.00
+        confidence = (
+            0.25
+            + (average_relevance * 1.25)
+        )
+
+        return round(
+            max(
+                0.0,
+                min(confidence, 1.0),
+            ),
+            2,
+        )
 
 
 def validation_node(

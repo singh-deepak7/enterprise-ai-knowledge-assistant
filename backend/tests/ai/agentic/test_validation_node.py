@@ -207,6 +207,7 @@ def test_validation_assigns_full_confidence():
         {
             "source": "policy.pdf",
             "page": 2,
+            
         }
     ]
 
@@ -218,6 +219,7 @@ def test_validation_assigns_full_confidence():
                 metadata={
                     "source": "policy.pdf",
                     "page": 2,
+                    "relevance_score": 0.60,
                 },
             )
         ],
@@ -282,7 +284,7 @@ def test_validation_reduces_confidence_for_fallback_answer():
         source_attribution=attribution,
     )
 
-    assert result.confidence_score == 0.8
+    assert result.confidence_score == 0.0
 
 def test_validation_populates_sources():
     attribution = Mock(spec=SourceAttribution)
@@ -309,3 +311,66 @@ def test_validation_populates_sources():
             "page": 5,
         }
     ]
+
+def test_validation_confidence_uses_relevance_scores():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = [
+        {
+            "source": "policy.pdf",
+            "page": 2,
+        }
+    ]
+
+    state = GraphState(
+        question="What is comprehensive coverage?",
+        retrieved_chunks=[
+            Document(
+                page_content="Coverage",
+                metadata={
+                    "source": "policy.pdf",
+                    "page": 2,
+                    "relevance_score": 0.24,
+                },
+            )
+        ],
+        answer="Comprehensive coverage protects against theft.",
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.confidence_score == 0.55
+
+def test_validation_zero_confidence_without_relevance_scores():
+    attribution = Mock(spec=SourceAttribution)
+
+    attribution.build_sources.return_value = [
+        {
+            "source": "policy.pdf",
+            "page": 2,
+        }
+    ]
+
+    state = GraphState(
+        question="Coverage?",
+        retrieved_chunks=[
+            Document(
+                page_content="Coverage",
+                metadata={
+                    "source": "policy.pdf",
+                    "page": 2,
+                },
+            )
+        ],
+        answer="Coverage answer.",
+    )
+
+    result = validation_node(
+        state=state,
+        source_attribution=attribution,
+    )
+
+    assert result.confidence_score == 0.0
