@@ -10,8 +10,12 @@ from app.repositories.document_repository import (
 client = TestClient(app)
 
 
-def test_list_documents() -> None:
-    repository = DocumentRepository()
+def test_list_documents(
+    tmp_path,
+) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
 
     repository.save(
         DocumentRecord(

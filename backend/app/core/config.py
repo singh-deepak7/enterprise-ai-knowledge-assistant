@@ -47,6 +47,8 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
+    DOCUMENT_DB_PATH: str = "app/data/documents.db"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

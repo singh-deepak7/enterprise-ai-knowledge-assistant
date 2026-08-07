@@ -17,20 +17,22 @@ def build_record(
     )
 
 
-def test_save_and_get_document() -> None:
-    repository = DocumentRepository()
+def test_save_and_get_document(tmp_path,) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
 
     record = build_record()
 
     repository.save(record)
 
-    assert repository.get(
-        "doc-1"
-    ) == record
+    assert repository.get("doc-1") == record
 
 
-def test_list_documents() -> None:
-    repository = DocumentRepository()
+def test_list_documents(tmp_path,) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
 
     first = build_record(
         "doc-1"
@@ -49,8 +51,10 @@ def test_list_documents() -> None:
     ]
 
 
-def test_delete_document() -> None:
-    repository = DocumentRepository()
+def test_delete_document(tmp_path,) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
 
     record = build_record()
 
@@ -66,8 +70,10 @@ def test_delete_document() -> None:
     ) is None
 
 
-def test_delete_unknown_document() -> None:
-    repository = DocumentRepository()
+def test_delete_unknown_document(tmp_path,) -> None:
+    repository = DocumentRepository(
+        tmp_path / "documents.db"
+    )
 
     assert repository.delete(
         "missing"
