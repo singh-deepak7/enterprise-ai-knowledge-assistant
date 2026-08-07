@@ -175,6 +175,10 @@ class AgenticWorkflow:
         """
         Stream LangGraph workflow events.
 
+        Emits both:
+        - workflow node updates
+        - custom streaming events such as LLM tokens
+
         Used by the SSE chat endpoint.
         """
 
@@ -201,10 +205,17 @@ class AgenticWorkflow:
             message=question,
         )
 
-        return self._graph.stream(
+        for stream_mode, event in self._graph.stream(
             initial_state,
-            stream_mode="updates",
-        )
+            stream_mode=[
+                "updates",
+                "custom",
+            ],
+        ):
+            yield {
+                "type": stream_mode,
+                "data": event,
+            }
 
     def _planner(
         self,
