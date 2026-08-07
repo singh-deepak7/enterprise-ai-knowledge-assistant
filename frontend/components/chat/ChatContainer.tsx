@@ -31,6 +31,10 @@ function getWorkflowStatus(event: unknown): string | null {
   }
 }
 
+function getDisplayFileName(path: string): string {
+  return path.split("/").pop() ?? path;
+}
+
 export default function ChatContainer() {
   const [question, setQuestion] = useState("");
 
@@ -215,7 +219,7 @@ export default function ChatContainer() {
           <div className="mt-3 space-y-2">
             {sources.map((source, index) => (
               <div key={index} className="text-sm">
-                📄 {source.source}
+                📄 {getDisplayFileName(source.source)}
                 <div>Page {source.page}</div>
               </div>
             ))}
