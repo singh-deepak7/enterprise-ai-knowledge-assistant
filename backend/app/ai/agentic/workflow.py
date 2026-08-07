@@ -7,7 +7,10 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import Iterator
+from typing import Any
 
+from langchain_core.messages import AIMessageChunk
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -80,18 +83,12 @@ class AgenticWorkflow:
             session_id,
         )
 
-        history = self._conversation_memory.get_history(
-            session_id,
-        )
-
-        initial_state = GraphState(
+        initial_state = self._create_initial_state(
             question=question,
+            session_id=session_id,
             request_id=request_id,
-            conversation_history=history,
         )
 
-        # Store current user message after loading history so
-        # it isn't duplicated in the current prompt.
         self._conversation_memory.add_user_message(
             session_id=session_id,
             message=question,
@@ -145,6 +142,110 @@ class AgenticWorkflow:
             return result
 
         except Exception as ex:
+            self._log_workflow_failure(
+                initial_state=initial_state,
+                request_id=request_id,
+                session_id=session_id,
+                workflow_start=workflow_start,
+                exception=ex,
+            )
+
+            raise
+
+    def stream(
+        self,
+        question: str,
+        session_id: str,
+    ) -> Iterator[dict[str, Any]]:
+        """
+        Stream workflow updates and LLM tokens.
+
+        Conversation history is loaded before the current user
+        message is stored so the current question is not duplicated
+        in the prompt.
+        """
+
+        workflow_start = time.perf_counter()
+        request_id = str(uuid.uuid4())
+
+        logger.info(
+            "Starting streaming agentic workflow "
+            "[request_id=%s session_id=%s]",
+            request_id,
+            session_id,
+        )
+
+        initial_state = self._create_initial_state(
+            question=question,
+            session_id=session_id,
+            request_id=request_id,
+        )
+
+        self._conversation_memory.add_user_message(
+            session_id=session_id,
+            message=question,
+        )
+
+        final_answer = ""
+
+        try:
+            for stream_mode, data in self._graph.stream(
+                initial_state,
+                stream_mode=[
+                    "updates",
+                    "messages",
+                ],
+            ):
+                if stream_mode == "messages":
+                    message, metadata = data
+
+                    if not isinstance(
+                        message,
+                        AIMessageChunk,
+                    ):
+                        continue
+
+                    content = message.content
+
+                    if not isinstance(content, str):
+                        continue
+
+                    if not content:
+                        continue
+
+                    final_answer += content
+
+                    yield {
+                        "type": "token",
+                        "data": {
+                            "content": content,
+                            "node": metadata.get(
+                                "langgraph_node",
+                            ),
+                        },
+                    }
+
+                    continue
+
+                if stream_mode == "updates":
+                    final_answer = (
+                        self._extract_answer_from_update(
+                            data=data,
+                            current_answer=final_answer,
+                        )
+                    )
+
+                    yield {
+                        "type": "updates",
+                        "data": data,
+                    }
+
+            if final_answer:
+                self._conversation_memory.add_assistant_message(
+                    session_id=session_id,
+                    message=final_answer,
+                )
+
             workflow_duration_ms = round(
                 (
                     time.perf_counter()
@@ -154,33 +255,125 @@ class AgenticWorkflow:
                 2,
             )
 
-            logger.exception(
-                "Agentic workflow failed "
+            logger.info(
+                "Streaming agentic workflow completed "
                 "[request_id=%s session_id=%s "
-                "duration=%.2fms error=%s]",
+                "duration=%.2fms]",
                 request_id,
                 session_id,
                 workflow_duration_ms,
-                type(ex).__name__,
             )
 
-            initial_state.metadata.setdefault(
-                "workflow",
-                {},
-            )
-
-            initial_state.metadata["workflow"].update(
-                {
-                    "request_id": request_id,
-                    "session_id": session_id,
-                    "status": "failed",
-                    "duration_ms": workflow_duration_ms,
-                    "error_type": type(ex).__name__,
-                    "error_message": str(ex),
-                }
+        except Exception as ex:
+            self._log_workflow_failure(
+                initial_state=initial_state,
+                request_id=request_id,
+                session_id=session_id,
+                workflow_start=workflow_start,
+                exception=ex,
             )
 
             raise
+
+    def _create_initial_state(
+        self,
+        question: str,
+        session_id: str,
+        request_id: str,
+    ) -> GraphState:
+        """
+        Create workflow state with conversation history.
+        """
+
+        history = self._conversation_memory.get_history(
+            session_id,
+        )
+
+        return GraphState(
+            question=question,
+            request_id=request_id,
+            conversation_history=history,
+        )
+
+    @staticmethod
+    def _extract_answer_from_update(
+        data: Any,
+        current_answer: str,
+    ) -> str:
+        """
+        Extract the completed answer from a node update.
+
+        The completed reasoning/validation answer acts as a fallback
+        if token streaming did not produce text.
+        """
+
+        if not isinstance(data, dict):
+            return current_answer
+
+        for value in data.values():
+            if not isinstance(value, dict):
+                continue
+
+            answer = value.get("answer")
+
+            if (
+                isinstance(answer, str)
+                and answer
+            ):
+                return answer
+
+        return current_answer
+
+    @staticmethod
+    def _log_workflow_failure(
+        initial_state: GraphState,
+        request_id: str,
+        session_id: str,
+        workflow_start: float,
+        exception: Exception,
+    ) -> None:
+        """
+        Record and log workflow failure metadata.
+        """
+
+        workflow_duration_ms = round(
+            (
+                time.perf_counter()
+                - workflow_start
+            )
+            * 1000,
+            2,
+        )
+
+        logger.exception(
+            "Agentic workflow failed "
+            "[request_id=%s session_id=%s "
+            "duration=%.2fms error=%s]",
+            request_id,
+            session_id,
+            workflow_duration_ms,
+            type(exception).__name__,
+        )
+
+        initial_state.metadata.setdefault(
+            "workflow",
+            {},
+        )
+
+        initial_state.metadata["workflow"].update(
+            {
+                "request_id": request_id,
+                "session_id": session_id,
+                "status": "failed",
+                "duration_ms": workflow_duration_ms,
+                "error_type": type(
+                    exception
+                ).__name__,
+                "error_message": str(
+                    exception
+                ),
+            }
+        )
 
     def _planner(
         self,

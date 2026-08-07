@@ -1,6 +1,6 @@
 export interface ChatRequest {
   question: string;
-  session_id?: string;
+  session_id: string;
 }
 
 export interface ChatSource {

@@ -1,5 +1,6 @@
 import json
 import logging
+from collections.abc import Iterator
 
 from fastapi import (
     APIRouter,
@@ -39,7 +40,11 @@ def chat(
     Ask a question using the LangGraph Agentic Workflow.
     """
 
-    logger.info("Received chat request.")
+    logger.info(
+        "Received chat request "
+        "[session_id=%s].",
+        request.session_id,
+    )
 
     try:
         state = workflow.invoke(
@@ -47,7 +52,11 @@ def chat(
             session_id=request.session_id,
         )
 
-        logger.info("Chat request completed.")
+        logger.info(
+            "Chat request completed "
+            "[session_id=%s].",
+            request.session_id,
+        )
 
         return ChatResponse(
             answer=state.answer,
@@ -55,7 +64,11 @@ def chat(
         )
 
     except Exception as ex:
-        logger.exception("Chat request failed.")
+        logger.exception(
+            "Chat request failed "
+            "[session_id=%s].",
+            request.session_id,
+        )
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -74,34 +87,49 @@ def chat_stream(
     ),
 ) -> StreamingResponse:
     """
-    Stream workflow events using Server Sent Events.
+    Stream workflow events using Server-Sent Events.
     """
 
-    logger.info("Received streaming chat request.")
+    logger.info(
+        "Received streaming chat request "
+        "[session_id=%s].",
+        request.session_id,
+    )
 
-    def event_generator():
+    def event_generator() -> Iterator[str]:
         try:
             for event in workflow.stream(
                 question=request.question,
+                session_id=request.session_id,
             ):
                 yield (
                     "data: "
-                    + json.dumps(event, default=str)
+                    + json.dumps(
+                        event,
+                        default=str,
+                    )
                     + "\n\n"
                 )
 
-            yield "event: done\ndata: {}\n\n"
+            yield (
+                "event: done\n"
+                "data: {}\n\n"
+            )
 
         except Exception as ex:
             logger.exception(
-                "Streaming chat request failed."
+                "Streaming chat request failed "
+                "[session_id=%s].",
+                request.session_id,
             )
 
             yield (
                 "event: error\n"
                 "data: "
                 + json.dumps(
-                    {"detail": str(ex)}
+                    {
+                        "detail": str(ex),
+                    }
                 )
                 + "\n\n"
             )
@@ -109,4 +137,8 @@ def chat_stream(
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   streamChat,
@@ -62,6 +62,10 @@ export default function ChatContainer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const sessionIdRef = useRef<string>(
+    crypto.randomUUID(),
+  );
+
   async function handleSubmit() {
     const submittedQuestion = question.trim();
 
@@ -69,11 +73,10 @@ export default function ChatContainer() {
       return;
     }
 
-    const userMessageId = crypto.randomUUID();
     const assistantMessageId = crypto.randomUUID();
 
     const userMessage: ChatMessage = {
-      id: userMessageId,
+      id: crypto.randomUUID(),
       role: "user",
       content: submittedQuestion,
       createdAt: new Date(),
@@ -101,11 +104,9 @@ export default function ChatContainer() {
       await streamChat(
         {
           question: submittedQuestion,
+          session_id: sessionIdRef.current,
         },
         (event) => {
-          /*
-           * LLM token/chunk event.
-           */
           if (event.type === "token") {
             const content = event.data.content;
 
@@ -129,9 +130,6 @@ export default function ChatContainer() {
             return;
           }
 
-          /*
-           * LangGraph node update.
-           */
           const status = getWorkflowStatus(event);
 
           if (status) {
@@ -175,13 +173,10 @@ export default function ChatContainer() {
 
               return {
                 ...message,
-
                 content:
                   message.content ||
                   completeAnswer,
-
                 confidenceScore,
-
                 sources,
               };
             }),
