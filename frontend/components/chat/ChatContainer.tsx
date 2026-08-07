@@ -66,6 +66,18 @@ export default function ChatContainer() {
     crypto.randomUUID(),
   );
 
+  function handleNewChat() {
+    if (loading) {
+      return;
+    }
+
+    sessionIdRef.current = crypto.randomUUID();
+
+    setMessages([]);
+    setQuestion("");
+    setError(null);
+  }
+
   async function handleSubmit() {
     const submittedQuestion = question.trim();
 
@@ -222,14 +234,25 @@ export default function ChatContainer() {
 
   return (
     <section className="flex min-h-[70vh] flex-col rounded-lg border">
-      <div className="border-b p-6">
-        <h1 className="text-2xl font-semibold">
-          Enterprise AI Assistant
-        </h1>
+      <div className="flex items-center justify-between border-b p-6">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            Enterprise AI Assistant
+          </h1>
 
-        <p className="text-muted-foreground">
-          Ask questions about your knowledge base.
-        </p>
+          <p className="text-muted-foreground">
+            Ask questions about your knowledge base.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="rounded-md border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={loading}
+          onClick={handleNewChat}
+        >
+          New Chat
+        </button>
       </div>
 
       <div className="min-h-0 flex-1 p-6">
