@@ -1,24 +1,26 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from fastapi.testclient import TestClient
 
-from app.repositories.document_repository import DocumentRecord
-from app.schemas.storage import StorageResult
-from app.services.document_service import DocumentService
 from app.core.exceptions import DuplicateDocumentException
 from app.dependencies import get_document_service
 from app.main import app
-from fastapi.testclient import TestClient
+from app.repositories.document_repository import DocumentRecord
+from app.schemas.storage import StorageResult
+from app.services.document_service import DocumentService
 
 
 client = TestClient(
     app,
     raise_server_exceptions=False,
 )
+
 
 @pytest.mark.asyncio
 async def test_upload_indexes_document(
@@ -61,7 +63,9 @@ async def test_upload_indexes_document(
 
     file = Mock()
 
-    result = await service.upload(file)
+    result = await service.upload(
+        file,
+    )
 
     validation_service.validate.assert_awaited_once_with(
         file,
@@ -85,20 +89,90 @@ async def test_upload_indexes_document(
         original_filename="sample.pdf",
     )
 
-    document_repository.save.assert_called_once_with(
-        DocumentRecord(
-            document_id="123",
-            original_filename="sample.pdf",
-            stored_filename="abc123.pdf",
-            file_path=str(stored_file),
-            content_type="application/pdf",
-            size_bytes=len(file_content),
-            content_hash=expected_hash,
-        )
+    document_repository.save.assert_called_once()
+
+    saved_record = (
+        document_repository
+        .save
+        .call_args
+        .args[0]
     )
 
+    assert isinstance(
+        saved_record,
+        DocumentRecord,
+    )
+
+    assert saved_record.document_id == "123"
+
+    assert (
+        saved_record.original_filename
+        == "sample.pdf"
+    )
+
+    assert (
+        saved_record.stored_filename
+        == "abc123.pdf"
+    )
+
+    assert (
+        saved_record.file_path
+        == str(stored_file)
+    )
+
+    assert (
+        saved_record.content_type
+        == "application/pdf"
+    )
+
+    assert (
+        saved_record.size_bytes
+        == len(file_content)
+    )
+
+    assert (
+        saved_record.content_hash
+        == expected_hash
+    )
+
+    assert saved_record.chunk_count == 8
+
+    assert saved_record.status == "indexed"
+
+    assert saved_record.uploaded_at
+
+    # Ensure uploaded_at is a valid ISO timestamp.
+    datetime.fromisoformat(
+        saved_record.uploaded_at,
+    )
+
+    # Upload still returns the StorageResult.
     assert result.document_id == "123"
-    assert result.original_filename == "sample.pdf"
+
+    assert (
+        result.original_filename
+        == "sample.pdf"
+    )
+
+    assert (
+        result.stored_filename
+        == "abc123.pdf"
+    )
+
+    assert (
+        result.file_path
+        == str(stored_file)
+    )
+
+    assert (
+        result.content_type
+        == "application/pdf"
+    )
+
+    assert (
+        result.size_bytes
+        == len(file_content)
+    )
 
 
 def test_delete_document(
@@ -125,6 +199,9 @@ def test_delete_document(
         content_type="application/pdf",
         size_bytes=1024,
         content_hash="test-hash",
+        uploaded_at="2026-08-07T12:00:00+00:00",
+        chunk_count=10,
+        status="indexed",
     )
 
     document_repository.get.return_value = record
@@ -191,7 +268,10 @@ def test_delete_document_when_file_is_missing(
     document_repository = Mock()
     vector_store_service = Mock()
 
-    missing_file = tmp_path / "missing.pdf"
+    missing_file = (
+        tmp_path
+        / "missing.pdf"
+    )
 
     document_repository.get.return_value = DocumentRecord(
         document_id="doc-123",
@@ -201,6 +281,9 @@ def test_delete_document_when_file_is_missing(
         content_type="application/pdf",
         size_bytes=1024,
         content_hash="test-hash",
+        uploaded_at="2026-08-07T12:00:00+00:00",
+        chunk_count=10,
+        status="indexed",
     )
 
     service = DocumentService(
@@ -236,9 +319,14 @@ async def test_upload_rejects_duplicate_document(
     document_repository = Mock()
     vector_store_service = Mock()
 
-    file_path = tmp_path / "duplicate.pdf"
+    file_path = (
+        tmp_path
+        / "duplicate.pdf"
+    )
 
-    file_content = b"same document content"
+    file_content = (
+        b"same document content"
+    )
 
     file_path.write_bytes(
         file_content,
@@ -266,6 +354,11 @@ async def test_upload_rejects_duplicate_document(
             content_type="application/pdf",
             size_bytes=100,
             content_hash=expected_hash,
+            uploaded_at=(
+                "2026-08-07T12:00:00+00:00"
+            ),
+            chunk_count=4,
+            status="indexed",
         )
     )
 
@@ -282,7 +375,9 @@ async def test_upload_rejects_duplicate_document(
     with pytest.raises(
         DuplicateDocumentException,
     ):
-        await service.upload(file)
+        await service.upload(
+            file,
+        )
 
     document_repository.get_by_content_hash.assert_called_once_with(
         expected_hash,
@@ -296,10 +391,12 @@ async def test_upload_rejects_duplicate_document(
 
 
 def test_upload_duplicate_document() -> None:
-    service = Mock(spec=DocumentService)
+    service = Mock(
+        spec=DocumentService,
+    )
 
     service.upload = AsyncMock(
-        side_effect=DuplicateDocumentException()
+        side_effect=DuplicateDocumentException(),
     )
 
     app.dependency_overrides[
@@ -318,14 +415,21 @@ def test_upload_duplicate_document() -> None:
             },
         )
 
-        assert response.status_code == 409
+        assert (
+            response.status_code
+            == 409
+        )
 
         assert response.json() == {
             "success": False,
             "error": {
                 "code": "DUPLICATE_DOCUMENT",
-                "message": "Document has already been uploaded.",
+                "message": (
+                    "Document has already "
+                    "been uploaded."
+                ),
             },
         }
+
     finally:
         app.dependency_overrides.clear()

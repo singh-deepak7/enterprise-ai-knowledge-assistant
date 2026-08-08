@@ -16,6 +16,9 @@ class DocumentRecord:
     content_type: str
     size_bytes: int
     content_hash: str = ""
+    uploaded_at: str = ""
+    chunk_count: int = 0
+    status: str = "indexed"
 
 
 class DocumentRepository:
@@ -71,7 +74,10 @@ class DocumentRepository:
                     file_path TEXT NOT NULL,
                     content_type TEXT NOT NULL,
                     size_bytes INTEGER NOT NULL,
-                    content_hash TEXT
+                    content_hash TEXT,
+                    uploaded_at TEXT,
+                    chunk_count INTEGER NOT NULL DEFAULT 0,
+                    status TEXT NOT NULL DEFAULT 'indexed'
                 )
                 """
             )
@@ -95,6 +101,30 @@ class DocumentRepository:
                     """
                 )
 
+            if "uploaded_at" not in column_names:
+                connection.execute(
+                    """
+                    ALTER TABLE documents
+                    ADD COLUMN uploaded_at TEXT
+                    """
+                )
+
+            if "chunk_count" not in column_names:
+                connection.execute(
+                    """
+                    ALTER TABLE documents
+                    ADD COLUMN chunk_count INTEGER NOT NULL DEFAULT 0
+                    """
+                )
+
+            if "status" not in column_names:
+                connection.execute(
+                    """
+                    ALTER TABLE documents
+                    ADD COLUMN status TEXT NOT NULL DEFAULT 'indexed'
+                    """
+                )
+
     def save(
         self,
         record: DocumentRecord,
@@ -113,9 +143,12 @@ class DocumentRepository:
                     file_path,
                     content_type,
                     size_bytes,
-                    content_hash
+                    content_hash,
+                    uploaded_at,
+                    chunk_count,
+                    status
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(document_id)
                 DO UPDATE SET
                     original_filename = excluded.original_filename,
@@ -123,7 +156,10 @@ class DocumentRepository:
                     file_path = excluded.file_path,
                     content_type = excluded.content_type,
                     size_bytes = excluded.size_bytes,
-                    content_hash = excluded.content_hash
+                    content_hash = excluded.content_hash,
+                    uploaded_at = excluded.uploaded_at,
+                    chunk_count = excluded.chunk_count,
+                    status = excluded.status
                 """,
                 (
                     record.document_id,
@@ -133,6 +169,9 @@ class DocumentRepository:
                     record.content_type,
                     record.size_bytes,
                     record.content_hash,
+                    record.uploaded_at,
+                    record.chunk_count,
+                    record.status,
                 ),
             )
 
@@ -153,7 +192,10 @@ class DocumentRepository:
                     file_path,
                     content_type,
                     size_bytes,
-                    content_hash
+                    content_hash,
+                    uploaded_at,
+                    chunk_count,
+                    status
                 FROM documents
                 ORDER BY original_filename
                 """
@@ -182,7 +224,10 @@ class DocumentRepository:
                     file_path,
                     content_type,
                     size_bytes,
-                    content_hash
+                    content_hash,
+                    uploaded_at,
+                    chunk_count,
+                    status
                 FROM documents
                 WHERE document_id = ?
                 """,
@@ -215,7 +260,10 @@ class DocumentRepository:
                     file_path,
                     content_type,
                     size_bytes,
-                    content_hash
+                    content_hash,
+                    uploaded_at,
+                    chunk_count,
+                    status
                 FROM documents
                 WHERE content_hash = ?
                 LIMIT 1
@@ -272,4 +320,7 @@ class DocumentRepository:
             content_type=row["content_type"],
             size_bytes=row["size_bytes"],
             content_hash=row["content_hash"] or "",
+            uploaded_at=row["uploaded_at"] or "",
+            chunk_count=row["chunk_count"] or 0,
+            status=row["status"] or "indexed",
         )

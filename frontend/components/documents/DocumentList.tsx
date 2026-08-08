@@ -41,6 +41,23 @@ function getFileType(contentType: string): string {
   }
 }
 
+function formatUploadedAt(uploadedAt: string): string {
+  if (!uploadedAt) {
+    return "Unknown upload time";
+  }
+
+  const date = new Date(uploadedAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown upload time";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function DocumentList({
   documents,
   deletingDocumentId,
@@ -79,8 +96,19 @@ export default function DocumentList({
                 {getFileType(document.content_type)}
                 {" • "}
                 {formatFileSize(document.size_bytes)}
+                {" • "}
+                {document.chunk_count}{" "}
+                {document.chunk_count === 1 ? "chunk" : "chunks"}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Uploaded {formatUploadedAt(document.uploaded_at)}
               </p>
             </div>
+
+            <span className="rounded-full border px-2.5 py-1 text-xs font-medium capitalize">
+              {document.status}
+            </span>
 
             <button
               type="button"

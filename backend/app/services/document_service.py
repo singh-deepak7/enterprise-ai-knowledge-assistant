@@ -13,6 +13,7 @@ from app.core.exceptions import DuplicateDocumentException
 
 from pathlib import Path
 import hashlib
+from datetime import datetime, timezone
 
 
 from app.ai.vectorstores.vector_store_service import VectorStoreService
@@ -101,6 +102,11 @@ class DocumentService:
                 content_type=result.content_type,
                 size_bytes=result.size_bytes,
                 content_hash=content_hash,
+                uploaded_at=datetime.now(
+                    timezone.utc,
+                ).isoformat(),
+                chunk_count=chunk_count,
+                status="indexed",
             )
         )
 

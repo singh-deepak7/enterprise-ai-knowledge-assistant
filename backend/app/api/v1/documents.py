@@ -47,6 +47,9 @@ def list_documents(
             original_filename=record.original_filename,
             content_type=record.content_type,
             size_bytes=record.size_bytes,
+            uploaded_at=record.uploaded_at,
+            chunk_count=record.chunk_count,
+            status=record.status,
         )
         for record in records
     ]

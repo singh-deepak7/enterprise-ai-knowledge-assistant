@@ -32,6 +32,9 @@ def test_list_documents(
             file_path="/tmp/stored-policy.pdf",
             content_type="application/pdf",
             size_bytes=1024,
+            uploaded_at="2026-08-07T12:00:00+00:00",
+            chunk_count=10,
+            status="indexed",
         )
     )
 
@@ -53,6 +56,9 @@ def test_list_documents(
                     "original_filename": "policy.pdf",
                     "content_type": "application/pdf",
                     "size_bytes": 1024,
+                    "uploaded_at": "2026-08-07T12:00:00+00:00",
+                    "chunk_count": 10,
+                    "status": "indexed",
                 }
             ]
         }
