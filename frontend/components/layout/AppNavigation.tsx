@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 const navigation = [
   {
@@ -49,6 +50,8 @@ export default function AppNavigation() {
               </Link>
             );
           })}
+
+           <LogoutButton />
         </nav>
       </div>
     </header>
