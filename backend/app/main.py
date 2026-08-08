@@ -11,6 +11,8 @@ from app.core.exceptions import (
 from app.core.logging import logger, setup_logging
 from app.core.startup import validate_startup
 
+import os
+
 
 # Configure logging once
 setup_logging()
@@ -51,5 +53,12 @@ app.add_exception_handler(
     unhandled_exception_handler,
 )
 
+import os
 
+print("LANGSMITH_TRACING:", os.getenv("LANGSMITH_TRACING"))
+print("LANGSMITH_PROJECT:", os.getenv("LANGSMITH_PROJECT"))
+print(
+    "LANGSMITH_API_KEY:",
+    bool(os.getenv("LANGSMITH_API_KEY")),
+)
 logger.info("Application starting...")

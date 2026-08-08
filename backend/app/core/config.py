@@ -49,6 +49,10 @@ class Settings(BaseSettings):
 
     DOCUMENT_DB_PATH: str = "app/data/documents.db"
 
+    LANGSMITH_TRACING: bool = False
+    LANGSMITH_API_KEY: str = ""
+    LANGSMITH_PROJECT: str = "enterprise-ai-knowledge-assistant"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
