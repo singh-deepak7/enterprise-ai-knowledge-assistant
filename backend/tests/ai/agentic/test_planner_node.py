@@ -24,7 +24,7 @@ def test_planner_detects_definition():
 
     assert result.intent == "definition"
     assert result.retrieval_strategy == "hybrid"
-    assert result.top_k == 3
+    assert result.top_k == 5
     assert result.requires_retrieval is True
 
 

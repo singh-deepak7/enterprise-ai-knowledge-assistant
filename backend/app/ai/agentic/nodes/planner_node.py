@@ -69,7 +69,7 @@ class PlannerNode:
         elif self._DEFINITION_PATTERN.search(question):
             state.intent = "definition"
             state.retrieval_strategy = "hybrid"
-            state.top_k = 3
+            state.top_k = 5
 
         else:
             state.intent = "general_qa"

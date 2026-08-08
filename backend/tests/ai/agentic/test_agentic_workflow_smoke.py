@@ -26,6 +26,7 @@ def test_agentic_workflow_smoke() -> None:
                 "source": "policy.pdf",
                 "page": 2,
                 "chunk": 5,
+                "relevance_score": 0.24,
             },
         )
     ]
@@ -86,6 +87,9 @@ def test_agentic_workflow_smoke() -> None:
         }
     ]
 
+    assert state.validated is True
+    assert state.confidence_score == 0.55
+
     retrieval_service.retrieve.assert_called_once()
 
     prompt_builder.build_prompt.assert_called_once()
@@ -94,7 +98,10 @@ def test_agentic_workflow_smoke() -> None:
 
     source_attribution.build_sources.assert_called_once()
 
-def mock_llm_response(answer: str) -> LLMResponse:
+
+def mock_llm_response(
+    answer: str,
+) -> LLMResponse:
     return LLMResponse(
         answer=answer,
         provider="OpenAI",

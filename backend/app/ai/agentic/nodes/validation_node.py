@@ -16,6 +16,8 @@ from app.ai.retrieval.source_attribution import SourceAttribution
 
 logger = logging.getLogger(__name__)
 
+MIN_VALIDATION_CONFIDENCE = 0.40
+
 FALLBACK_RESPONSE = (
     "I couldn't find that information in the provided documents."
 )
@@ -121,9 +123,22 @@ def validation_node(
             state.retrieved_chunks,
         )
 
-        state.sources = sources
-        state.validated = True
-        state.confidence_score = _calculate_confidence(state)
+        confidence_score = _calculate_confidence(state)
+
+        validated = _is_valid_response(
+            state=state,
+            sources=sources,
+            confidence_score=confidence_score,
+        )
+
+        state.confidence_score = confidence_score
+        state.validated = validated
+
+        if not validated:
+            state.answer = FALLBACK_RESPONSE
+            state.sources = []
+        else:
+            state.sources = sources
 
         elapsed_ms = round(
             (time.perf_counter() - start) * 1000,
@@ -138,7 +153,7 @@ def validation_node(
                 "duration_ms": elapsed_ms,
                 "source_count": len(sources),
                 "workflow_complete": True,
-                "validated": True,
+                 "validated": validated,
                 "confidence_score": state.confidence_score,
             }
         )
@@ -146,10 +161,11 @@ def validation_node(
         logger.info(
             (
                 "Validation completed with %d source(s). "
-                "Confidence %.2f"
+                "Confidence %.2f validated=%s"
             ),
-            len(sources),
+            len(state.sources),
             state.confidence_score,
+            state.validated,
         )
 
         return state
@@ -159,3 +175,29 @@ def validation_node(
             "Validation node failed."
         )
         raise
+
+def _is_valid_response(
+    state: GraphState,
+    sources: list[dict],
+    confidence_score: float,
+) -> bool:
+    """
+    Determine whether the generated answer has sufficient
+    evidence to be returned as a validated response.
+    """
+
+    answer = state.answer.strip()
+
+    if not answer:
+        return False
+
+    if answer == FALLBACK_RESPONSE:
+        return False
+
+    if not state.retrieved_chunks:
+        return False
+
+    if not sources:
+        return False
+
+    return confidence_score >= MIN_VALIDATION_CONFIDENCE
