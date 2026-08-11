@@ -33,6 +33,9 @@ If the system does not find sufficiently relevant document content, it does not 
 
 ## High-level architecture
 
+![system architecture](/docs/Screenshots/system_architecture.png)
+
+
 ```text
 User
  |
@@ -59,17 +62,17 @@ Duplicate Detection                      Retrieval required?
  v                                           Yes            No
 Loader Factory                                  |             |
  |                                              v             |
- v                                          Retrieval          |
-Document Loader                                  |             |
+ v                                          Retrieval         |
+Document Loader                                  |            |
  |                                              v             |
- v                                            ChromaDB         |
-Chunk Service                                    |             |
+ v                                            ChromaDB        |
+Chunk Service                                    |            |
  |                                              v             |
- v                                        Relevant context?    |
-Embedding + Vector Store                    /           \      |
- |                                          Yes          No     |
- v                                           |            |     |
-ChromaDB                                     v            v     |
+ v                                        Relevant context?   |
+Embedding + Vector Store                    /           \     |
+ |                                          Yes          No   |
+ v                                           |            |   |
+ChromaDB                                     v            v   |
                                          Reasoning   Safe fallback
                                               \           /
                                                v         v
@@ -158,6 +161,8 @@ enterprise-ai-knowledge-assistant/
 
 The ingestion pipeline prepares uploaded documents for later semantic search.
 
+![Document ingestion](/docs/Screenshots/document_ingestion.png)
+
 ### Step 1: Upload
 
 A client sends a document to:
@@ -233,6 +238,8 @@ After indexing is complete, the document is registered with metadata including u
 The question-answering workflow is implemented with LangGraph.
 
 The graph uses shared `GraphState` so each node can add information to the same request state.
+
+![Agentic flow](/docs/Screenshots/agentic_flow.png)
 
 Important state includes:
 
@@ -469,6 +476,9 @@ LANGSMITH_PROJECT
 ```
 
 LangSmith makes it possible to inspect LLM and LangGraph execution outside normal application logs.
+
+
+![Observability and evaluation ](/docs/Screenshots/observability_evaluation.png)
 
 ## AI evaluation
 
@@ -802,9 +812,9 @@ A future AWS deployment could evolve toward the following architecture:
 These enhancements would move the project from a locally running AI application toward a secure, persistent, scalable enterprise architecture.
 
 
-## Architecture diagram
+## AWS Architecture diagram
 
-TODO:
+![AWS architecture](/docs/Screenshots/aws_architecture.png)
 
 ## License
 
