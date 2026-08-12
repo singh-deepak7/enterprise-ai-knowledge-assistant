@@ -415,6 +415,67 @@
             <img src="Screenshots/observability_evaluation.png" alt="Observability and LangSmith evaluation architecture diagram" loading="lazy">
           </div>
         </div>
+
+        <div class="evaluation-results reveal">
+          <div class="evaluation-results-copy">
+            <div class="eyebrow">LANGSMITH EXPERIMENT RESULTS</div>
+            <h3>Evaluation results you can inspect, compare and improve</h3>
+            <p>
+              The evaluation suite runs a curated dataset through the complete RAG workflow and records
+              experiment-level quality and operational metrics in LangSmith. This makes changes to retrieval,
+              prompting, guardrails and model configuration measurable rather than subjective.
+            </p>
+
+            <div class="evaluation-metrics">
+              <div>
+                <strong>Correctness</strong>
+                <span>Compare generated answers with expected behavior.</span>
+              </div>
+              <div>
+                <strong>Retrieval quality</strong>
+                <span>Inspect source matching and grounded document selection.</span>
+              </div>
+              <div>
+                <strong>Latency & tokens</strong>
+                <span>Track runtime characteristics alongside answer quality.</span>
+              </div>
+              <div>
+                <strong>Experiment comparison</strong>
+                <span>Use repeatable runs to evaluate changes over time.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="evaluation-screenshot-card">
+            <div class="evaluation-shot-top">
+              <div>
+                <span class="mini-label">ACTUAL PROJECT OUTPUT</span>
+                <h3>LangSmith evaluation dashboard</h3>
+              </div>
+              <button
+                class="zoom-button"
+                data-image="Screenshots/langsmith_evaluation_results.png"
+                data-title="LangSmith Evaluation Results"
+              >
+                Open screenshot
+              </button>
+            </div>
+
+            <button
+              class="evaluation-image-button"
+              data-image="Screenshots/langsmith_evaluation_results.png"
+              data-title="LangSmith Evaluation Results"
+              aria-label="Open LangSmith evaluation screenshot"
+            >
+              <img
+                src="Screenshots/langsmith_evaluation_results.png"
+                alt="LangSmith experiment dashboard showing evaluation metrics and individual experiment runs"
+                loading="lazy"
+              />
+              <span>Click to enlarge</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
