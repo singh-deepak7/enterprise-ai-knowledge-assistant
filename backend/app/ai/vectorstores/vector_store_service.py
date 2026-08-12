@@ -1,0 +1,116 @@
+import logging
+
+from langchain_core.documents import Document
+
+from app.ai.vectorstores.providers.base_provider import (
+    BaseVectorStoreProvider,
+)
+from app.ai.vectorstores.providers.chroma_provider import ChromaProvider
+
+logger = logging.getLogger(__name__)
+
+
+class VectorStoreService:
+    """
+    High-level service for vector store operations.
+    """
+
+    def __init__(
+        self,
+        provider: BaseVectorStoreProvider | None = None,
+    ) -> None:
+        self._provider = provider or ChromaProvider()
+
+    def add_documents(
+        self,
+        documents: list[Document],
+    ) -> None:
+        """
+        Add documents to the vector store.
+        """
+
+        if not documents:
+            logger.warning("No documents supplied for indexing.")
+            return
+
+        logger.info(
+            "Indexing %d document(s).",
+            len(documents),
+        )
+
+        self._provider.add_documents(documents)
+
+    def similarity_search(
+        self,
+        query: str,
+        k: int = 5,
+    ) -> list[Document]:
+        """
+        Search for similar documents.
+        """
+
+        logger.info(
+            "Executing similarity search (top_k=%d).",
+            k,
+        )
+
+        return self._provider.similarity_search(
+            query=query,
+            k=k,
+        )
+
+    def delete(
+        self,
+        ids: list[str],
+    ) -> None:
+        """
+        Delete indexed documents.
+        """
+
+        if not ids:
+            logger.warning("No document ids supplied for deletion.")
+            return
+
+        self._provider.delete(ids)
+
+    def similarity_search_with_scores(
+        self,
+        query: str,
+        k: int = 5,
+    ) -> list[tuple[Document, float]]:
+        """
+        Search for similar documents with relevance scores.
+        """
+
+        logger.info(
+            "Executing similarity search with scores (top_k=%d).",
+            k,
+        )
+
+        return self._provider.similarity_search_with_scores(
+            query=query,
+            k=k,
+        )
+
+    def delete_by_document_id(
+        self,
+        document_id: str,
+    ) -> None:
+        """
+        Delete all indexed chunks belonging to an uploaded document.
+        """
+
+        if not document_id:
+            logger.warning(
+                "No document id supplied for deletion."
+            )
+            return
+
+        logger.info(
+            "Deleting indexed chunks for document_id=%s.",
+            document_id,
+        )
+
+        self._provider.delete_by_document_id(
+            document_id
+        )
