@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Enterprise AI Knowledge Assistant — production-oriented Agentic RAG portfolio project using FastAPI, LangGraph, OpenAI, ChromaDB, LangSmith and Next.js." />
+  <meta name="author" content="Deepak Singh" />
+  <meta name="theme-color" content="#07111f" />
+
+  <meta property="og:title" content="Enterprise AI Knowledge Assistant | Deepak Singh" />
+  <meta property="og:description" content="A production-oriented Agentic RAG system with document ingestion, semantic retrieval, LangGraph orchestration, guardrails, streaming, evaluation and observability." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="Screenshots/system_architecture.png" />
+
+  <title>Enterprise AI Knowledge Assistant | Deepak Singh</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Enterprise AI Knowledge Assistant home">
+        <span class="brand-mark">AI</span>
+        <span>Enterprise Knowledge Assistant</span>
+      </a>
+
+      <button class="menu-button" id="menuButton" aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#agentic">Agentic RAG</a>
+        <a href="#evaluation">Evaluation</a>
+        <a href="#demo">Demo</a>
+        <a href="#roadmap">Roadmap</a>
+        <a class="nav-cta" href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant" target="_blank" rel="noreferrer">
+          View GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero section">
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <div class="eyebrow">
+            <span class="status-dot"></span>
+            Production-oriented Agentic RAG
+          </div>
+
+          <h1>
+            Enterprise AI
+            <span class="gradient-text">Knowledge Assistant</span>
+          </h1>
+
+          <p class="hero-lead">
+            A full-stack AI system that turns enterprise documents into a grounded,
+            conversational knowledge experience using RAG, LangGraph orchestration,
+            guardrails, source attribution, streaming responses, evaluation, and observability.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant" target="_blank" rel="noreferrer">
+              Explore the repository
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a class="button secondary" href="#architecture">Explore architecture</a>
+            <a class="button demo-button" href="#demo">
+              View demo
+              <span aria-hidden="true">↓</span>
+            </a>
+          </div>
+
+          <div class="tech-row" aria-label="Primary technologies">
+            <span>FastAPI</span>
+            <span>LangGraph</span>
+            <span>OpenAI</span>
+            <span>ChromaDB</span>
+            <span>LangSmith</span>
+            <span>Next.js</span>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal">
+          <div class="terminal-card">
+            <div class="terminal-top">
+              <div class="terminal-dots"><i></i><i></i><i></i></div>
+              <span>agentic_workflow.py</span>
+              <span class="terminal-badge">LIVE FLOW</span>
+            </div>
+
+            <div class="workflow">
+              <div class="flow-node active">
+                <span class="node-icon">01</span>
+                <div>
+                  <strong>Planner</strong>
+                  <small>Intent + retrieval strategy</small>
+                </div>
+              </div>
+
+              <div class="flow-line"><span></span></div>
+
+              <div class="flow-node active">
+                <span class="node-icon">02</span>
+                <div>
+                  <strong>Retrieval</strong>
+                  <small>Semantic search + threshold</small>
+                </div>
+              </div>
+
+              <div class="flow-branch">
+                <span>Relevant context?</span>
+                <div>
+                  <b class="yes">YES</b>
+                  <b class="no">NO → SAFE FALLBACK</b>
+                </div>
+              </div>
+
+              <div class="flow-line"><span></span></div>
+
+              <div class="flow-node">
+                <span class="node-icon">03</span>
+                <div>
+                  <strong>Reasoning</strong>
+                  <small>Grounded prompt + conversation memory</small>
+                </div>
+              </div>
+
+              <div class="flow-line"><span></span></div>
+
+              <div class="flow-node">
+                <span class="node-icon">04</span>
+                <div>
+                  <strong>Validation</strong>
+                  <small>Confidence + source attribution</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="terminal-footer">
+              <span><i class="green-dot"></i> Traced with LangSmith</span>
+              <span>SSE streaming enabled</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics-strip">
+      <div class="container metrics-grid">
+        <div><strong>4</strong><span>Document formats</span></div>
+        <div><strong>5</strong><span>Core AI workflow stages</span></div>
+        <div><strong>SSE</strong><span>Streaming responses</span></div>
+        <div><strong>3</strong><span>Evaluation dimensions</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="overview">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">PROJECT OVERVIEW</div>
+          <h2>Built beyond a simple <span class="gradient-text">chat-with-PDF demo</span></h2>
+          <p>
+            The system handles the complete lifecycle from document ingestion to grounded answering,
+            including duplicate detection, vector indexing, conditional agent routing, safe no-context
+            behavior, conversation memory, source attribution and production-style observability.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <div class="feature-icon">01</div>
+            <h3>Multi-format ingestion</h3>
+            <p>Upload PDF, TXT, CSV and XLSX documents through a validated indexing pipeline.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon">02</div>
+            <h3>Agentic orchestration</h3>
+            <p>LangGraph coordinates planning, retrieval, reasoning, fallback handling and validation.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon">03</div>
+            <h3>Grounded retrieval</h3>
+            <p>ChromaDB semantic search and relevance thresholds reduce unrelated context reaching the LLM.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon">04</div>
+            <h3>Guardrails</h3>
+            <p>When reliable context is missing, the workflow skips LLM reasoning and returns a safe fallback.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon">05</div>
+            <h3>Observability</h3>
+            <p>Request IDs, node timings, retrieval scores, structured logs and LangSmith traces improve debugging.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon">06</div>
+            <h3>Evaluation</h3>
+            <p>Repeatable LangSmith experiments measure answer correctness, source match and unanswerable behavior.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="architecture">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">SYSTEM DESIGN</div>
+          <h2>Architecture designed with <span class="gradient-text">clear service boundaries</span></h2>
+          <p>
+            The application separates frontend, API, document processing, AI orchestration,
+            vector search and model integration so local components can later be replaced with managed services.
+          </p>
+        </div>
+
+        <div class="image-panel reveal">
+          <div class="image-panel-top">
+            <div>
+              <span class="mini-label">CURRENT ARCHITECTURE</span>
+              <h3>End-to-end system architecture</h3>
+            </div>
+            <button class="zoom-button" data-image="Screenshots/system_architecture.png" data-title="System Architecture">Open diagram</button>
+          </div>
+          <img src="Screenshots/system_architecture.png" alt="Enterprise AI Knowledge Assistant system architecture diagram" loading="lazy">
+        </div>
+
+        <div class="architecture-cards">
+          <article class="architecture-card reveal">
+            <span class="arch-number">01</span>
+            <h3>Experience layer</h3>
+            <p>Next.js 16, React 19 and TypeScript provide the frontend experience with REST and SSE integration.</p>
+          </article>
+          <article class="architecture-card reveal">
+            <span class="arch-number">02</span>
+            <h3>Application layer</h3>
+            <p>FastAPI handles document APIs, health endpoints, dependencies, validation and streaming responses.</p>
+          </article>
+          <article class="architecture-card reveal">
+            <span class="arch-number">03</span>
+            <h3>AI orchestration layer</h3>
+            <p>LangGraph expresses conditional routing and shared graph state across the agentic workflow.</p>
+          </article>
+          <article class="architecture-card reveal">
+            <span class="arch-number">04</span>
+            <h3>Knowledge layer</h3>
+            <p>OpenAI embeddings and ChromaDB provide semantic retrieval over indexed enterprise documents.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="agentic">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">AGENTIC RAG WORKFLOW</div>
+          <h2>Reasoning is a <span class="gradient-text">controlled workflow</span>, not one giant prompt</h2>
+          <p>
+            Each request moves through explicit decision points. Retrieval is conditional,
+            weak context is filtered, and the no-context path prevents unsupported answers.
+          </p>
+        </div>
+
+        <div class="split-layout">
+          <div class="steps">
+            <article class="step reveal">
+              <span>01</span>
+              <div>
+                <h3>Plan</h3>
+                <p>Classify intent, choose a retrieval strategy, set top-k and decide whether retrieval is required.</p>
+              </div>
+            </article>
+            <article class="step reveal">
+              <span>02</span>
+              <div>
+                <h3>Retrieve</h3>
+                <p>Search ChromaDB, score candidates and retain only chunks that pass the configured relevance threshold.</p>
+              </div>
+            </article>
+            <article class="step reveal">
+              <span>03</span>
+              <div>
+                <h3>Protect</h3>
+                <p>If relevant evidence is unavailable, skip generation and return a deterministic safe response.</p>
+              </div>
+            </article>
+            <article class="step reveal">
+              <span>04</span>
+              <div>
+                <h3>Reason</h3>
+                <p>Build a prompt from the question, retrieved documents and prior turns, then invoke the configured model.</p>
+              </div>
+            </article>
+            <article class="step reveal">
+              <span>05</span>
+              <div>
+                <h3>Validate</h3>
+                <p>Attach supporting sources and workflow metadata before returning the final response.</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="image-panel compact reveal">
+            <div class="image-panel-top">
+              <div>
+                <span class="mini-label">LANGGRAPH</span>
+                <h3>Conditional agent flow</h3>
+              </div>
+              <button class="zoom-button" data-image="Screenshots/agentic_flow.png" data-title="Agentic RAG Flow">Open</button>
+            </div>
+            <img src="Screenshots/agentic_flow.png" alt="Agentic LangGraph workflow diagram" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="ingestion">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">DOCUMENT PIPELINE</div>
+          <h2>From upload to <span class="gradient-text">searchable enterprise knowledge</span></h2>
+          <p>
+            A structured ingestion pipeline validates, stores, deduplicates, loads,
+            chunks, embeds and indexes every supported document.
+          </p>
+        </div>
+
+        <div class="image-panel reveal">
+          <div class="image-panel-top">
+            <div>
+              <span class="mini-label">INGESTION</span>
+              <h3>Document processing flow</h3>
+            </div>
+            <button class="zoom-button" data-image="Screenshots/document_ingestion.png" data-title="Document Ingestion Flow">Open diagram</button>
+          </div>
+          <img src="Screenshots/document_ingestion.png" alt="Document ingestion flow diagram" loading="lazy">
+        </div>
+
+        <div class="pipeline-row reveal">
+          <span>Validate</span><i>→</i>
+          <span>Store</span><i>→</i>
+          <span>SHA-256 Dedup</span><i>→</i>
+          <span>Load</span><i>→</i>
+          <span>Chunk</span><i>→</i>
+          <span>Embed</span><i>→</i>
+          <span>Index</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evaluation">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">AI QUALITY & OPERATIONS</div>
+          <h2>Evaluation and observability are <span class="gradient-text">part of the product</span></h2>
+          <p>
+            The project measures behavior through repeatable evaluation datasets and traces workflow execution
+            so retrieval, prompting and model changes can be inspected rather than guessed.
+          </p>
+        </div>
+
+        <div class="quality-grid">
+          <div class="quality-copy">
+            <article class="quality-item reveal">
+              <span>✓</span>
+              <div>
+                <h3>Answer correctness</h3>
+                <p>An LLM judge compares generated responses with reference answers.</p>
+              </div>
+            </article>
+            <article class="quality-item reveal">
+              <span>✓</span>
+              <div>
+                <h3>Source match</h3>
+                <p>Evaluation checks whether expected documents appear in returned source attribution.</p>
+              </div>
+            </article>
+            <article class="quality-item reveal">
+              <span>✓</span>
+              <div>
+                <h3>Unanswerable behavior</h3>
+                <p>Guardrail tests confirm that unsupported questions fall back safely instead of hallucinating.</p>
+              </div>
+            </article>
+            <article class="quality-item reveal">
+              <span>✓</span>
+              <div>
+                <h3>Trace-level visibility</h3>
+                <p>LangSmith and application logging expose node execution, request IDs, latency and retrieval scores.</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="image-panel compact reveal">
+            <div class="image-panel-top">
+              <div>
+                <span class="mini-label">LANGSMITH + LOGGING</span>
+                <h3>Observability & evaluation</h3>
+              </div>
+              <button class="zoom-button" data-image="Screenshots/observability_evaluation.png" data-title="Observability and Evaluation">Open</button>
+            </div>
+            <img src="Screenshots/observability_evaluation.png" alt="Observability and LangSmith evaluation architecture diagram" loading="lazy">
+          </div>
+        </div>
+
+        <div class="evaluation-results reveal">
+          <div class="evaluation-results-copy">
+            <div class="eyebrow">LANGSMITH EXPERIMENT RESULTS</div>
+            <h3>Evaluation results you can inspect, compare and improve</h3>
+            <p>
+              The evaluation suite runs a curated dataset through the complete RAG workflow and records
+              experiment-level quality and operational metrics in LangSmith. This makes changes to retrieval,
+              prompting, guardrails and model configuration measurable rather than subjective.
+            </p>
+
+            <div class="evaluation-metrics">
+              <div>
+                <strong>Correctness</strong>
+                <span>Compare generated answers with expected behavior.</span>
+              </div>
+              <div>
+                <strong>Retrieval quality</strong>
+                <span>Inspect source matching and grounded document selection.</span>
+              </div>
+              <div>
+                <strong>Latency & tokens</strong>
+                <span>Track runtime characteristics alongside answer quality.</span>
+              </div>
+              <div>
+                <strong>Experiment comparison</strong>
+                <span>Use repeatable runs to evaluate changes over time.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="evaluation-screenshot-card">
+            <div class="evaluation-shot-top">
+              <div>
+                <span class="mini-label">ACTUAL PROJECT OUTPUT</span>
+                <h3>LangSmith evaluation dashboard</h3>
+              </div>
+              <button
+                class="zoom-button"
+                data-image="Screenshots/langsmith_evaluation_results.png"
+                data-title="LangSmith Evaluation Results"
+              >
+                Open screenshot
+              </button>
+            </div>
+
+            <button
+              class="evaluation-image-button"
+              data-image="Screenshots/langsmith_evaluation_results.png"
+              data-title="LangSmith Evaluation Results"
+              aria-label="Open LangSmith evaluation screenshot"
+            >
+              <img
+                src="Screenshots/langsmith_evaluation_results.png"
+                alt="LangSmith experiment dashboard showing evaluation metrics and individual experiment runs"
+                loading="lazy"
+              />
+              <span>Click to enlarge</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="stack">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">TECH STACK</div>
+          <h2>Full-stack engineering meets <span class="gradient-text">LLM application architecture</span></h2>
+        </div>
+
+        <div class="stack-grid">
+          <div class="stack-group reveal">
+            <span class="stack-label">Frontend</span>
+            <div class="stack-tags">
+              <span>Next.js 16</span><span>React 19</span><span>TypeScript</span>
+              <span>Tailwind CSS 4</span><span>shadcn</span><span>Framer Motion</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <span class="stack-label">Backend</span>
+            <div class="stack-tags">
+              <span>Python</span><span>FastAPI</span><span>Pydantic</span>
+              <span>Server-Sent Events</span><span>pytest</span><span>Docker</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <span class="stack-label">AI / RAG</span>
+            <div class="stack-tags">
+              <span>LangGraph</span><span>LangChain</span><span>OpenAI</span>
+              <span>text-embedding-3-small</span><span>ChromaDB</span><span>Conversation Memory</span>
+            </div>
+          </div>
+          <div class="stack-group reveal">
+            <span class="stack-label">Quality</span>
+            <div class="stack-tags">
+              <span>LangSmith</span><span>LLM-as-Judge</span><span>Source Attribution</span>
+              <span>Safe Fallback</span><span>Structured Logging</span><span>Retrieval Scores</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="roadmap">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">PRODUCTION ROADMAP</div>
+          <h2>Designed to evolve into an <span class="gradient-text">AWS-native enterprise platform</span></h2>
+          <p>
+            The current implementation keeps infrastructure local for development while preserving boundaries
+            that make managed cloud replacements straightforward.
+          </p>
+        </div>
+
+        <div class="roadmap-layout">
+          <div class="roadmap-list">
+            <article class="roadmap-item reveal">
+              <span class="roadmap-status">NEXT</span>
+              <div>
+                <h3>AWS deployment</h3>
+                <p>Containerize and deploy frontend/backend with ECS or EKS, load balancing, monitoring and CI/CD.</p>
+              </div>
+            </article>
+            <article class="roadmap-item reveal">
+              <span class="roadmap-status">NEXT</span>
+              <div>
+                <h3>Persistent storage</h3>
+                <p>Move documents to Amazon S3 and application/session metadata to DynamoDB.</p>
+              </div>
+            </article>
+            <article class="roadmap-item reveal">
+              <span class="roadmap-status">NEXT</span>
+              <div>
+                <h3>Authentication & RBAC</h3>
+                <p>Resolve users and roles at login and enforce document-level authorization in retrieval.</p>
+              </div>
+            </article>
+            <article class="roadmap-item reveal">
+              <span class="roadmap-status">NEXT</span>
+              <div>
+                <h3>Secrets & production operations</h3>
+                <p>Manage API keys with AWS Secrets Manager and add centralized telemetry, scaling and resilience.</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="image-panel compact reveal">
+            <div class="image-panel-top">
+              <div>
+                <span class="mini-label">TARGET STATE</span>
+                <h3>AWS architecture</h3>
+              </div>
+              <button class="zoom-button" data-image="Screenshots/aws_architecture.png" data-title="Future AWS Architecture">Open</button>
+            </div>
+            <img src="Screenshots/aws_architecture.png" alt="Future AWS architecture diagram" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="section section-alt" id="demo">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div class="eyebrow">PROJECT DEMO</div>
+          <h2>See the assistant <span class="gradient-text">in action</span></h2>
+          <p>
+            This walkthrough demonstrates the end-to-end experience: uploading enterprise documents,
+            asking grounded questions, streaming the response, and reviewing supporting sources.
+          </p>
+        </div>
+
+        <div class="demo-shell reveal">
+          <div class="demo-browser-bar">
+            <div class="demo-browser-dots">
+              <i></i><i></i><i></i>
+            </div>
+            <span>Enterprise AI Knowledge Assistant</span>
+            <span class="demo-status"><i></i> DEMO</span>
+          </div>
+
+          <div class="demo-media">
+            <img
+              src="Screenshots/project_demo.gif"
+              alt="Enterprise AI Knowledge Assistant product demo"
+              loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+
+            <div class="demo-placeholder">
+              <div class="demo-placeholder-icon">▶</div>
+              <h3>Add your recorded demo GIF here</h3>
+              <p>
+                Save your recording as
+                <code>docs/Screenshots/project_demo.gif</code>
+                and it will automatically appear in this section.
+              </p>
+            </div>
+          </div>
+
+          <div class="demo-footer">
+            <div>
+              <span class="mini-label">SUGGESTED WALKTHROUGH</span>
+              <p>Upload document → Ask a question → Stream answer → Review citations</p>
+            </div>
+            <a
+              class="button secondary"
+              href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant"
+              target="_blank"
+              rel="noreferrer"
+            >
+              View source code <span>↗</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section final-cta">
+      <div class="container cta-card reveal">
+        <div>
+          <div class="eyebrow">OPEN SOURCE PROJECT</div>
+          <h2>Explore the implementation</h2>
+          <p>
+            Review the source code, architecture, tests, API design and AI workflow in the GitHub repository.
+          </p>
+        </div>
+        <a class="button primary" href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant" target="_blank" rel="noreferrer">
+          View source on GitHub <span>↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <strong>Enterprise AI Knowledge Assistant</strong>
+        <p>Designed and built by Deepak Singh.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/singh-deepak7" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://github.com/singh-deepak7/enterprise-ai-knowledge-assistant" target="_blank" rel="noreferrer">Repository</a>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="image-modal" id="imageModal">
+    <button class="modal-close" id="modalClose" aria-label="Close image">×</button>
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle"></div>
+      <img id="modalImage" alt="" />
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
